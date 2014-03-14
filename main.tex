@@ -1,0 +1,102 @@
+\documentclass[english]{article}
+\usepackage{fontspec}
+\setmainfont[Ligatures=TeX]{Adobe Caslon Pro}
+\usepackage{geometry}
+\geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\usepackage{babel}
+\usepackage[unicode=true,pdfusetitle,
+ bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
+ breaklinks=true,pdfborder={0 0 0},backref=false,colorlinks=false]
+ {hyperref}
+
+\begin{document}
+
+\title{Implementing arrays in a way that is amenable to compiler analysis}
+
+\maketitle
+
+\section{Introduction}
+
+Arrays in today's languages (literature review stuff)
+
+What languages are ``famous'' for arrays and how to they implement
+arrays: APL, ZPL, Python/NumPy, C/Fortran. Implementation details:
+row vs column major, indexing rules, etc. Implementation details constrain
+how users have to deal with stuff.
+
+Problems for static compilers for dynamics languages? Matlab in particular?
+
+Problems with dynamic language implementations? Python?
+
+Arrays suffer from dearth of abstraction - lots of manual implementation,
+hand coded into the compiler, implementation is imposed on users.
+Oftentimes the object system is disjoint from the arrays, e.g. R types,
+because these subsystems were tacked onto the language at different
+points in time. In NumPy, mechanisms of objects are not well used.
+Detailed manual mechanisms in C code. Custom dispatch, generated code,
+pretty crazy. NumPy arrays are Python objects but the mechanism of
+the object system don't play a huge role in defining behavior. Objects
+are lookup tables of behaviors, primarily centered around indexing
+behavior. Single indexing lookup of symbols which are just integers.
+Not very powerful - people think it is because it is dynamic dispatch.
+We can generalize it to be tremendously more powerful.
+
+
+\section{Body}
+
+What does Julia do?
+
+Use the object system to implement Arrays. A coherent unification
+of things that were typically disjoint, e.g. in R. 
+
+Array is a pair of (shape, linear data storage) = metadata of bounded
+size O(1) + raw data O(N).
+
+Most people do this too, maybe at most add a stride. With this basic
+structure we can define behavior for multidimensional arrays. Can have
+lots of nontrivial design problems.
+
+Here we consider the indexing rules. How to compute shapes of subarrays.
+How to deal with singleton dimensions is but a very special case even
+though superficially the rules mention them explicitly.
+
+Here is a good place to use Julia code to codify all the various indexing
+rules that various languages have
+
+In Julia, such indexing rules are defined in exactly one place and
+can be changed later if so desired.
+
+In practice we may all have to reach a consensus on what rules to
+use, but it should not be enforced upon uses by pure technical implementation
+convenience. The point is that in Julia, these are not enforced a
+priori. Sometimes the distinctions between the various indexing rules
+are semantically meaningful and that's when this flexibility becomes
+particularly valuable. For example Tim Holy's image 4-arrays. Quantum
+mechanics when you average out multiple indistinguishable particles.
+$n$-point correlations functions where which $k$ indices you average out defines
+any number of lower-point $n-k$ point correlation functions.
+
+Other semantic issues: embeddings of vectors as matrix columns? Matrix version
+of circle-ellipse problem, analogous to real-complex embedding. Transposition?
+
+\section{Array views (Dahua's stuff)}
+
+Also interesting are array views. In certain cases of subarray slicing,
+it is possible to keep the data in place and return just a view (pointer)
+to the data instead of creating a new copy in memory. In this case
+the same infrastructure that applies to full arrays automatically
+works for subarrays. Views are just another thing that implement the
+array protocol: (length, size, getindex). Is there a point here about
+code reuse? Maybe but Jeff thinks it's not crucial.
+
+
+\section{Extensions of the idea}
+
+If we redefine Array to be (shape, stride pattern and linear data
+store), this would be sufficient to extend to row major vs column
+major. We would have a language that is majorization-agnostic, which
+defies the traditional classification.
+\end{document}
+
