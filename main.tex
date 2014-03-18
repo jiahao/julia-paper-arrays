@@ -1,15 +1,9 @@
 \documentclass[english]{article}
-\usepackage{fontspec}
-\setmainfont[Ligatures=TeX]{Adobe Caslon Pro}
 \usepackage{geometry}
 \geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \usepackage{babel}
-\usepackage[unicode=true,pdfusetitle,
- bookmarks=true,bookmarksnumbered=false,bookmarksopen=false,
- breaklinks=true,pdfborder={0 0 0},backref=false,colorlinks=false]
- {hyperref}
 
 \begin{document}
 
@@ -98,5 +92,12 @@ If we redefine Array to be (shape, stride pattern and linear data
 store), this would be sufficient to extend to row major vs column
 major. We would have a language that is majorization-agnostic, which
 defies the traditional classification.
+
+Another interesting possibility is the treatment of symmetric and antisymmetric
+tensors, since the ability to define custom striding rules would allow for
+representations of such quantities that eliminate the redundant storage of
+symmetry-equivalent components. (This becomes very important in higher
+dimensions $d$ since multiplicity of redundant storage grows as O($d!$).
+
 \end{document}
 
