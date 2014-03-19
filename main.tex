@@ -56,7 +56,55 @@ Julia, multiple dispatch
 
 \section{Introduction}
 
-Arrays in today's languages (literature review stuff)
+One-dimensional arrays are a simple and essential data structure found in
+most programming languages. The multi-dimensional arrays required in
+scientific computing, however, are a different beast entirely. Allowing
+any number of dimensions entails a significant increase in complexity. Why?
+The essential reason is that core properties of the data structure no
+longer fit in a constant amount of space. The space needed to store the
+sizes of the dimensions (the array shape) is proportional to the number
+of dimensions. This does not seem so bad, but becomes a large problem
+due to three additional facts.
+
+% TODO: break up using enumerate
+First, code that operates on the dimension
+sizes needs to be highly efficient. Typically the overhead of a loop is
+unacceptable, and such code needs to be fully unrolled. Second, in some
+code the number of dimensions is a \emph{dynamic} property --- it is
+only known at run time. Third, programs may wish to treat arrays with
+different numbers of dimensions very differently. A vector (1d) might
+have rather different behaviors than a matrix (2d) (for example, to
+compute a norm). This kind of
+behavior makes the number of dimensions a crucial part of program
+semantics, preventing it from remaining a compiler implementation detail.
+
+% TODO: break up using enumerate
+These facts pull in different directions. The first fact asks for static
+analysis. The second fact asks for run-time flexibility. The third fact asks
+for dimensionality to be part of the type system, but partly determined
+at run time (for example, via virtual method dispatch). Current approaches
+choose a compromise. In some systems, the number of dimensions has a strict
+limit (e.g. 3 or 4), so that separate classes for each case may be written
+out in full. Other systems choose flexibility, and just accept that most
+or all operations will be dynamically dispatched. Other systems might
+provide flexibility only at compile time, for example a template library
+where the number of dimensions must be statically known.
+
+%% TODO: insert example of limited power of C++ array libraries
+
+%% TODO: examples of systems limited to n==3
+
+Whatever decision is made, rules must be defined for how various operators
+act on dimensions. For now we will focus on indexing, since selecting
+parts of arrays has particularly rich behavior with respect to
+dimensionality. For example, if a single row or column of a matrix is
+selected, does the result have one or two dimensions? Array implementations
+prefer to invoke general rules to answer such questions. Such a rule might
+say ``dimensions indexed with scalars are dropped'', or ``trailing
+dimensions of size one are dropped'', or ``the rank of the result
+is the sum of the ranks of the indexes'' (as in APL).
+
+\subsection{Arrays in today's languages (literature review stuff)}
 
 What languages are ``famous'' for arrays and how to they implement
 arrays: APL, ZPL, Python/NumPy, C/Fortran. Implementation details:
@@ -85,6 +133,7 @@ We can generalize it to be tremendously more powerful.
 
 What does Julia do?
 
+
 Use the object system to implement Arrays. A coherent unification
 of things that were typically disjoint, e.g. in R. 
 
@@ -106,6 +155,14 @@ In Julia, such indexing rules are defined in exactly one place and
 can be changed later if so desired.
 
 \subsection{The need for flexibility in array indexing rules}
+
+Our goal here is a bit unusual: we are not concerned with which rules
+might work best, but merely with how they can be specified, so that
+domain experts can experiment.
+
+In fact different domains want different things. E.g. in images, each
+dimension might be quite different, e.g. time vs. space vs. color,
+so you don't want to drop or rearrange dimensions very often.
 
 In practice we may all have to reach a consensus on what rules to
 use, but it should not be enforced upon uses by pure technical implementation
@@ -138,6 +195,104 @@ There is also something very funky with \MATLAB's cell arrays. You have to index
 
 %TODO Find an example for which this causes problems?
 
+\subsection{Ground rules}
+Here are our ground rules:
+
+\begin{enumerate}
+\item You can't manually implement the behavior inside the compiler
+\item The compiler must be able to reasonably understand the program
+\item The code must be reasonably easy to write
+\end{enumerate}
+
+
+How are such rules implemented? For a
+language with built-in multidimensional arrays, the compiler will
+analyze indexing expressions and determine an answer using hard-coded
+logic.
+
+% TODO: grab example from one of these compilers
+However, this approach is not satisfying: we would rather
+implement the behavior in libraries, so that different kinds of arrays
+may be defined, or so that rules of similar complexity may be
+defined for other kinds of objects. But these kinds of rules are
+unusually difficult to implement in libraries. If a library writes out
+its indexing logic using imperative code, the host language compiler
+is not likely to be able to analyze it. Using compile-time abstracton
+(templates) would provide better performance, but such libraries tend
+to be difficult to write (and read), and the full complement of
+indexing behavior expected by technical users strains the capabilities
+of such systems.
+
+% TODO: insert actual example of numpy
+
+Our dispatch mechanism permits a novel solution. If a multiple dispatch
+system supports variadic functions and argument ``splicing'' (the ability
+to pass a structure of $n$ values as $n$ separate arguments to a function),
+then indexing behavior can be defined as method signatures.
+
+This solution is still a compromise among the factors outlined above,
+but it is a new compromise that provides a net-better solution.
+% TODO more
+
+\section{\texttt{index\_shape}}
+
+Below we define a function \texttt{index\_shape} that computes the
+shape of a result array given a series of index arguments. We show
+three versions, each implementing a different rule that users in
+different domains might want:
+
+% TODO: point out array = (shape, data), so those are the two parts
+% we need to handle. In julia the ``data'' part is not a first class
+% object; it is not directly exposed to the user, but this is more
+% of an implementation detail.
+
+\begin{verbatim}
+# drop dimensions indexed with scalars
+index_shape() = ()
+index_shape(i::Real, I...) = index_shape(I...)
+index_shape(i, I...) = tuple(length(i), index_shape(I...)...)
+\end{verbatim}
+
+\begin{verbatim}
+# drop trailing dimensions indexed with scalars
+index_shape(i::Real...) = ()
+index_shape(i, I...) = tuple(length(i), index_shape(I...)...)
+\end{verbatim}
+
+\begin{verbatim}
+# rank summing (APL)
+index_shape() = ()
+index_shape(i, I...) = tuple(size(i)..., index_shape(I...)...)
+\end{verbatim}
+
+Inferring the length of the result of \texttt{index\_shape} is sufficient
+to infer the rank of the result array.
+
+These definitions are concise, easy to write, and possible for a
+compiler to understand fully using straightforward techniques.
+
+% TODO: point out how this combines the ``object part'' and the
+% ``array part'' into a coherent whole.
+
+%TODO put in some cleaned-up version of Jeff's derivation of the first case.
+
+The result type is determined using only dataflow type inference, plus a
+rule for splicing an immediate container (the type of \texttt{f((a,b)...)} is
+the type of \texttt{f(a,b)}). Argument list destructuring takes place inside
+the type intersection operator used to combine argument types with method
+signatures.
+
+This approach does not depend on any heuristics. Each call to \texttt{index\_shape}
+simply requires one recursive invocation of type inference. This process reaches
+the base case \texttt{()} for these definitions, since each recursive call
+handles a shorter argument list (for less-well-behaved definitions, we might
+end up invoking a widening operator instead).
+
+
+\begin{verbatim}
+diverge() = randbool() ? () : tuple(1, diverge()...)
+\end{verbatim}
+
 \section{Array views (Dahua's stuff)}
 
 Also interesting are array views. In certain cases of subarray slicing,
@@ -157,9 +312,9 @@ major. We would have a language that is majorization-agnostic, which
 defies the traditional classification.
 
 Data locality is another interesting issue. This can be part of the definition
-of Arrays.
+of Arrays. Data locality is an open problem. Maybe we need multiple linear data stores. Maybe we need complicated locality maps to be part of the associated metadata. But the point is that with a flexible definition in the Base library, not hard-coded into the compiler, these are design decisions that can be revisted and modified if necessary.
 
-Locality and majorization order are two facets of the more general issue - where are the data located? Data locality is an open problem. Maybe we need multipl linear data stores. Maybe we need complicated locality maps to be part of the associated metadata. But the point is that with a flexible definition in the Base library, not hard-coded into the compiler, these are design decisions that can be revisted and modified if necessary.
+Locality and majorization order are two facets of the more general issue - where are the data located? With the right abstractions you can implement and experiment with them, change them without too much difficulty. We may not have all the answers but you can experiment with the possibilities in the same spelling.
 
 Another interesting possibility is the treatment of symmetric and antisymmetric
 tensors, since the ability to define custom striding rules would allow for
