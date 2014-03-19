@@ -5,6 +5,8 @@
 
 \usepackage{amsmath}
 
+\newcommand{\MATLAB}{\textsc{MATLAB}}
+
 \begin{document}
 
 \special{papersize=8.5in,11in}
@@ -29,8 +31,8 @@
 \titlebanner{Array implementations in Julia}    % These are ignored unless
 \preprintfooter{Array implementations in Julia} % 'preprint' option specified.
 
-\title{Implementing arrays in a way that is amenable to compiler analysis}
-%\subtitle{Subtitle}
+\title{Array implementations in Julia}
+\subtitle{Implementing arrays in a way that is amenable to compiler analysis}
 
 \authorinfo{Jeff Bezanson \and Jiahao Chen \and Alan Edelman}
            {MIT Computer Science and Artificial Intelligence Laboratory}
@@ -103,6 +105,8 @@ rules that various languages have
 In Julia, such indexing rules are defined in exactly one place and
 can be changed later if so desired.
 
+\subsection{The need for flexibility in array indexing rules}
+
 In practice we may all have to reach a consensus on what rules to
 use, but it should not be enforced upon uses by pure technical implementation
 convenience. The point is that in Julia, these are not enforced a
@@ -115,6 +119,22 @@ any number of lower-point $n-k$ point correlation functions.
 
 Other semantic issues: embeddings of vectors as matrix columns? Matrix version
 of circle-ellipse problem, analogous to real-complex embedding. Transposition?
+
+\subsection{\MATLAB's indexing rules}
+
+In \MATLAB, all arrays must have at least two dimensions: row vectors, column vectors and scalars are treated as isomorphic to matrices with dimensions $1\times N$, $N\times1$ and $1\times1$ respectively. This reflects \MATLAB's original design principle as a ``\textbf{matrix} laboratory".
+
+Not having pure scalars can be mathematically troublesome. For example, the product $A_{m\times n} \times B_{1\times 1} \times C_{n\times p}$ is invalid under the ordinary rules of matrix multiplication for $n\ne1$; however, \MATLAB{} would allow the evaluation of this product by interpreting $B$ as a scalar which commutes with $A$ and $C$, allowing this product to be evaluated as the product of the scalar $B_{11}$ and the matrix product $A_{m\times n} \times C_{n\times p}$.
+
+%TODO Find examples where this kind of interpretation breaks commutativity or associativity. Matrices of matrices or matrices of quaternions?
+
+Also, all arrays are treated as if they have an infinite number of trailing singleton dimensions. This reflects a later design decision in \MATLAB{} to support multilinear algebra, albeit in a manner that does not quite mesh with the world of ordinary linear algebra. This unfortunately clashes with yet another indexing rule in \MATLAB{} that indexing a multidimensional array with a single index automatically triggers a reshape. For example, for $A_{3\times4}$, there is an ambiguity as to whether \texttt{A[5]} means \texttt{B=A[:];B[5]} or \texttt{A[5,1,1,\dots]}, and this ambiguity has to be resolved with an arbitrary design decision.
+
+\MATLAB{} also allows indexing with matrices, but they are treated as if they were flattened for indexing purposes, i.e.
+
+\texttt{A(M1, M2, \dots) = A(M1(:), M2(:)), \dots}
+
+%TODO Find an example for which this causes problems?
 
 \section{Array views (Dahua's stuff)}
 
@@ -133,6 +153,11 @@ If we redefine Array to be (shape, stride pattern and linear data
 store), this would be sufficient to extend to row major vs column
 major. We would have a language that is majorization-agnostic, which
 defies the traditional classification.
+
+Data locality is another interesting issue. This can be part of the definition
+of Arrays.
+
+Locality and majorization order are two facets of the more general issue - where are the data located? Data locality is an open problem. Maybe we need multipl linear data stores. Maybe we need complicated locality maps to be part of the associated metadata. But the point is that with a flexible definition in the Base library, not hard-coded into the compiler, these are design decisions that can be revisted and modified if necessary.
 
 Another interesting possibility is the treatment of symmetric and antisymmetric
 tensors, since the ability to define custom striding rules would allow for
