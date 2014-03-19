@@ -128,11 +128,13 @@ Not having pure scalars can be mathematically troublesome. For example, the prod
 
 %TODO Find examples where this kind of interpretation breaks commutativity or associativity. Matrices of matrices or matrices of quaternions?
 
-Also, all arrays are treated as if they have an infinite number of trailing singleton dimensions. This reflects a later design decision in \MATLAB{} to support multilinear algebra, albeit in a manner that does not quite mesh with the world of ordinary linear algebra. This unfortunately clashes with yet another indexing rule in \MATLAB{} that indexing a multidimensional array with a single index automatically triggers a reshape. For example, for $A_{3\times4}$, there is an ambiguity as to whether \texttt{A[5]} means \texttt{B=A[:];B[5]} or \texttt{A[5,1,1,\dots]}, and this ambiguity has to be resolved with an arbitrary design decision.
+Also, all arrays are treated as if they have an infinite number of trailing singleton dimensions. This reflects a later design decision in \MATLAB{} to support multilinear algebra \cite{matlabman:ma},  albeit in a manner that does not quite mesh with the world of ordinary linear algebra. This unfortunately clashes with the \textit{linear indexing} rule in \MATLAB{} that indexing a multidimensional array with a single index automatically triggers a reshape. For example, for $A_{3\times4}$, there is an ambiguity as to whether \texttt{A[5]} means \texttt{B=A[:];B[5]} or \texttt{A[5,1,1,\dots]}, and this ambiguity has to be resolved with an arbitrary design decision.
 
 \MATLAB{} also allows indexing with matrices, but they are treated as if they were flattened for indexing purposes, i.e.
 
 \texttt{A(M1, M2, \dots) = A(M1(:), M2(:)), \dots}
+
+There is also something very funky with \MATLAB's cell arrays. You have to index into them using \texttt{A\{...\}} instead of the usual \texttt{A(...)}.
 
 %TODO Find an example for which this causes problems?
 
@@ -176,16 +178,17 @@ The authors gratefully acknowledge the enthusiatic participation of the Julia de
 
 % We recommend abbrvnat bibliography style.
 
+\bibliography{refs}{}
 \bibliographystyle{abbrvnat}
 
 % The bibliography should be embedded for final submission.
 
-\begin{thebibliography}{}
-\softraggedright
+%\begin{thebibliography}{}
+%\softraggedright
 
 %\bibitem[Smith et~al.(2009)Smith, Jones]{smith02}
 %P. Q. Smith, and X. Y. Jones. ...reference text...
 
-\end{thebibliography}
+%\end{thebibliography}
 
 \end{document}
