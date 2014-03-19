@@ -56,6 +56,10 @@ Julia, multiple dispatch
 
 \section{Introduction}
 
+\begin{quotation}
+``Unfortunately, it is very difficult for a designer to select in advance all the abstractions which the users of his language might need. If a language is to be used at all, it is likely to be used to solve problems which its designer did not envision, and for which abstractions embedded in the language are not sufficient.'' - Ref. \cite{Liskov:1974pb}
+\end{quotation}
+
 One-dimensional arrays are a simple and essential data structure found in
 most programming languages. The multi-dimensional arrays required in
 scientific computing, however, are a different beast entirely. Allowing
@@ -175,7 +179,7 @@ $n$-point correlations functions where which $k$ indices you average out defines
 any number of lower-point $n-k$ point correlation functions.
 
 Other semantic issues: embeddings of vectors as matrix columns? Matrix version
-of circle-ellipse problem, analogous to real-complex embedding. Transposition?
+of circle-ellipse problem \cite{Halbert:1987ut}, a canonical example of the violation of the Liskov substitution principle \cite{Liskov:1987da}, analogous to real-complex embedding. Transposition?
 
 \subsection{\MATLAB's indexing rules}
 
