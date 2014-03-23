@@ -190,7 +190,7 @@ of circle-ellipse problem \cite{Halbert:1987ut}, a canonical example of the viol
 
 \subsection{\MATLAB's indexing rules}
 
-In \MATLAB, all arrays must have at least two dimensions: row vectors, column vectors and scalars are treated as isomorphic to matrices with dimensions $1\times N$, $N\times1$ and $1\times1$ respectively. This reflects \MATLAB's original design principle as a ``\textbf{matrix} laboratory".
+Arrays are the most fundamental data type in \MATLAB{}, and all \MATLAB{} arrays must have at least two dimensions. Consequently, row vectors, column vectors and scalars are treated as isomorphic to matrices with dimensions $1\times N$, $N\times1$ and $1\times1$ respectively. This reflects \MATLAB's original design principle as a ``\textbf{matrix} laboratory".
 
 Not having pure scalars can be mathematically troublesome. For example, the product $A_{m\times n} \times B_{1\times 1} \times C_{n\times p}$ is invalid under the ordinary rules of matrix multiplication for $n\ne1$; however, \MATLAB{} would allow the evaluation of this product by interpreting $B$ as a scalar which commutes with $A$ and $C$, allowing this product to be evaluated as the product of the scalar $B_{11}$ and the matrix product $A_{m\times n} \times C_{n\times p}$.
 
