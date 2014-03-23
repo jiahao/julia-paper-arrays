@@ -34,9 +34,9 @@
 \title{Array implementations in Julia}
 \subtitle{Implementing arrays in a way that is amenable to compiler analysis}
 
-\authorinfo{Jeff Bezanson \and Jiahao Chen \and Alan Edelman}
+\authorinfo{Jeff Bezanson \and Jiahao Chen \and Keno Fischer \and Alan Edelman}
            {MIT Computer Science and Artificial Intelligence Laboratory}
-           {\{ bezanson, jiahao, edelman \}@csail.mit.edu}
+           {\{ bezanson, jiahao, kfischer, edelman \}@csail.mit.edu}
 
 %TODO Get Dahua to sign on as coauthor
 %\authorinfo{Dahua Lin}
@@ -82,6 +82,8 @@ compute a norm). This kind of
 behavior makes the number of dimensions a crucial part of program
 semantics, preventing it from remaining a compiler implementation detail.
 
+%TODO: Separate out point that dimensionality is semantically meaningful.
+
 % TODO: break up using enumerate
 These facts pull in different directions. The first fact asks for static
 analysis. The second fact asks for run-time flexibility. The third fact asks
@@ -95,6 +97,11 @@ provide flexibility only at compile time, for example a template library
 where the number of dimensions must be statically known.
 
 %% TODO: insert example of limited power of C++ array libraries
+
+In some sense, C does not have a disjunction between arrays and other objects. In C, objects and arrays can only be accessed semantically with pointers. To the extent that C has a minimalist approach to both objects and arrays, they are not disjoint.
+
+In Fortran however, arrays were a fundamental part of the language from the very beginning, whereas objects were not introduced until the advent of Object-Oriented Fortran and Fortran 2003.
+
 
 %% TODO: examples of systems limited to n==3
 
