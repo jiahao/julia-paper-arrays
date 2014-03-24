@@ -96,9 +96,27 @@ or all operations will be dynamically dispatched. Other systems might
 provide flexibility only at compile time, for example a template library
 where the number of dimensions must be statically known.
 
-%% TODO: insert example of limited power of C++ array libraries
+Arguably, arrays were the earliest data structure to be conceived of, and implemented on, computers. Implementation specifications for three-dimensional arrays go back to Konrad Zuse's Plankalkül, and were also described in the programmer's manual of FORTRAN I. The programmers manual describes that:
 
-In some sense, C does not have a disjunction between arrays and other objects. In C, objects and arrays can only be accessed semantically with pointers. To the extent that C has a minimalist approach to both objects and arrays, they are not disjoint.
+%TODO cite http://www.catb.org/retro/plankalkuel/
+
+The elements of the array are stored sequentailly in memory.
+The elements are in column-major order
+The elements are stored from bottom right to top left.
+
+From this we can see that the first array language specification to be actually implemented specified that arrays were to be stored in a linear contiguous block in memory, that it was strided backward in memory and in column major style, and it had associated metadata about its shape which was partly user-controllable: the maximal rank was 3 (hard coded), but the size in each dimension could be user-specified.
+
+Arrays are useful mostly because the element indices can be computed at run time.
+
+%Footnote: The maximal rank of an array was increased to 7 in Fortran 77, and later to 15 in Fortran 2008.
+
+These design decisions were hard-baked into the FORTRAN I compiler, and have guided the design of compilers ever since.
+
+%CITE Compilers textbook
+
+%TODO Fortran started with only arrays; objects were added later: Arrays were the only compound type supported by Fortran. In Fortran however, arrays were a fundamental part of the language from the very beginning, whereas objects were not introduced until the advent of Object-Oriented Fortran and Fortran 2003.
+
+%TODO Fortran dynamic arrays were only introduced officially with the ALLOCATABLE keyword of Fortran 90.
 
 In Fortran however, arrays were a fundamental part of the language from the very beginning, whereas objects were not introduced until the advent of Object-Oriented Fortran and Fortran 2003.
 
