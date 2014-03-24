@@ -4,8 +4,12 @@
 % preprint      Remove this option only once the paper is in final form.
 
 \usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{url}
 
+\newcommand{\ALGOL}{A\textsc{LGOL}}
 \newcommand{\MATLAB}{\textsc{MATLAB}}
+\newcommand{\code}[1]{\texttt{#1}}
 
 \begin{document}
 
@@ -96,13 +100,15 @@ or all operations will be dynamically dispatched. Other systems might
 provide flexibility only at compile time, for example a template library
 where the number of dimensions must be statically known.
 
-Arguably, arrays were the earliest data structure to be conceived of, and implemented on, computers. Implementation specifications for three-dimensional arrays go back to Konrad Zuse's Plankalkül, and were also described in the programmer's manual of FORTRAN I. The programmers manual describes that:
+Arguably, arrays were the earliest data structure to be conceived of, and implemented on, computers. Implementation specifications for three-dimensional arrays go back to Konrad Zuse's Plankalk\"ul, and were also described in the reference implementation of FORTRAN I on the IBM 704 \cite{Backus:1956pr,Backus:1957fa}. The programmers manual describes that:
 
 %TODO cite http://www.catb.org/retro/plankalkuel/
 
-The elements of the array are stored sequentailly in memory.
-The elements are in column-major order
-The elements are stored from bottom right to top left.
+\begin{enumerate}
+\item The elements of the array are stored sequentially in memory.
+\item The elements are in column-major order.
+\item The elements are stored from bottom right to top left.
+\end{enumerate}
 
 From this we can see that the first array language specification to be actually implemented specified that arrays were to be stored in a linear contiguous block in memory, that it was strided backward in memory and in column major style, and it had associated metadata about its shape which was partly user-controllable: the maximal rank was 3 (hard coded), but the size in each dimension could be user-specified.
 
@@ -112,7 +118,11 @@ Arrays are useful mostly because the element indices can be computed at run time
 
 These design decisions were hard-baked into the FORTRAN I compiler, and have guided the design of compilers ever since.
 
+The arrays in Fortran were static arrays, where the size of the array is known and fixed at compile time and cannot be changed at runtime. (Dynamic arrays were introduced in the Fortran 90 standard with the \code{ALLOCATABLE} keyword.)
+
 %CITE Compilers textbook
+
+In contrast, the contemporaneous \ALGOL{} 60 programming language supported dynamic multidimensional arrays: not only were the arrays of arbitrary rank, but the size of the array could also change at runtime. This posed a challenge for compiler writers of the time. They introduced what was called the \textit{dope vector} \cite{Sattley:1960as, Sattley:1961as}, which contained the size and lower bound of each dimension, and the closely related \textit{storage mapping function} \cite[pp.~80--87]{Randell:1964a6} for the special case of 0-based indices and is essentially equivalent to \code{size(A::Array)} in Julia; both contain information needed to convert from the multidimensional array index to a linear memory offset.
 
 %TODO Fortran started with only arrays; objects were added later: Arrays were the only compound type supported by Fortran. In Fortran however, arrays were a fundamental part of the language from the very beginning, whereas objects were not introduced until the advent of Object-Oriented Fortran and Fortran 2003.
 
