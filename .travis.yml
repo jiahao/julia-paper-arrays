@@ -1,0 +1,11 @@
+install:
+  - sudo apt-get install texlive-latex-extra
+
+script:
+  - make
+
+notifications:
+  email:
+    recipients:
+      - jiahao@mit.edu
+    on_success: always
