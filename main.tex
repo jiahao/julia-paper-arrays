@@ -132,6 +132,16 @@ C \cite{Kernigham:1978cp}, like Fortran before Fortran 90, traditionally support
 
 %In C you can do A[][], or *A and do the strides and indexing manually, or **A which is an array of arrays which is NOT isomorphic to *A.
 
+C++ does not introduce a fundamentally new way to handle arrays. One might argue that dynamic and static arrays are implemented by the \code{std::vector} and \code{std::array} classes of the C++ Standard Library. However, the semantics are hard coded for one dimension only. Furthermore, directly indexing a vector \code{a[i]} is not required to incur a bounds check (such behavior is undefined by the standard), but only with the more cumbersome syntax \code{a.at(i)}, which then throws an \code{std::out\_of\_range} exception if \code{i} is out of bounds. In principle, a container resembling multidimensional arrays can be created by chaining these classes together, forming syntactically awkward constructions like \code{std::vector<std::vector<...>>}. However, this strictly speaking is not an array data structure if one consider a contiguous memory store to be one of the defining features of arrays, as there is no guarantee that C++ will allocate memory in this fashion. Additionally, the distinction made between \code{vector}s and \code{array}s in principle could lead to very strange constructs that are static in some dimensions but dynamic in others, e.g. in the chain \code{std::vector<std::array<...>>}.
+
+In practice, the high cost of iterative containers means that such constructs are not widely used; instead, programs use C-style arrays or resort to external libraries like \code{Boost.MultiArray}, which use complicated template metaprogramming techniques to achieve performance.
+
+\url{http://www.boost.org/doc/libs/1_55_0/libs/multi_array/doc/reference.html#MultiArray}
+
+Its memory model for elements is completely defined by 4 properties: the origin, shape, index bases, and strides. The origin is the address in memory of the element accessed as a[0][0]...[0], where a is a MultiArray. The shape is a list of numbers s1pecifying the size of containers at each dimension. For example, the first extent is the size of the outermost container, the second extent is the size of its subcontainers, and so on. The index bases are a list of signed values specifying the index of the first value in a container. All containers at the same dimension share the same index base. Note that since positive index bases are possible, the origin need not exist in order to determine the location in memory of the MultiArray's elements. The strides determine how index values are mapped to memory offsets. They accomodate a number of possible element layouts. For example, the elements of a 2 dimensional array can be stored by row (i.e., the elements of each row are stored contiguously) or by column (i.e., the elements of each column are stored contiguously).
+
+%% TODO: insert example of limited power of C++ array libraries
+
 In some sense, C does not have a disjunction between arrays and other objects. In C, objects and arrays can only be accessed semantically with pointers. To the extent that C has a minimalist approach to both objects and arrays, they are not disjoint.
 
 In \Mathematica, the central data type is an expression \cite{mathematica:expr},
