@@ -74,19 +74,23 @@ The essential reason is that core properties of the data structure no
 longer fit in a constant amount of space. The space needed to store the
 sizes of the dimensions (the array shape) is proportional to the number
 of dimensions. This does not seem so bad, but becomes a large problem
-due to three additional facts.
+due to three additional facts:
 
-% TODO: break up using enumerate
-First, code that operates on the dimension
+\begin{enumerate}
+\item{\bf Efficiency:} Code that operates on the dimension
 sizes needs to be highly efficient. Typically the overhead of a loop is
 unacceptable, and such code needs to be fully unrolled. Second, in some
-code the number of dimensions is a \emph{dynamic} property --- it is
-only known at run time. Third, programs may wish to treat arrays with
+
+\item{\bf Dynamic Nature:} In some code the number of dimensions is a
+\emph{dynamic} property --- it is only known at run time.
+
+\item{\bf Specializing:} Programs may wish to treat arrays with
 different numbers of dimensions very differently. A vector (1d) might
 have rather different behaviors than a matrix (2d) (for example, to
 compute a norm). This kind of
 behavior makes the number of dimensions a crucial part of program
 semantics, preventing it from remaining a compiler implementation detail.
+\end{enumerate}
 
 %TODO: Separate out point that dimensionality is semantically meaningful.
 
