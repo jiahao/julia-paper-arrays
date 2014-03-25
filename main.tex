@@ -4,11 +4,13 @@
 % preprint      Remove this option only once the paper is in final form.
 
 \usepackage{amsmath}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{url}
 
 \newcommand{\ALGOL}{A\textsc{LGOL}}
 \newcommand{\MATLAB}{\textsc{MATLAB}}
+\newcommand{\Mathematica}{\textit{Mathematica}}
 \newcommand{\code}[1]{\texttt{#1}}
 
 \begin{document}
@@ -130,6 +132,19 @@ In contrast, the contemporaneous \ALGOL{} 60 programming language supported dyna
 
 In Fortran however, arrays were a fundamental part of the language from the very beginning, whereas objects were not introduced until the advent of Object-Oriented Fortran and Fortran 2003.
 
+In \Mathematica, the central data type is an expression \cite{mathematica:expr},
+\url{}, whose parts can be referenced by the \code{[[]]}, or \code{Part}, symbol \cite{mathematica:part}: \code{A[[0]]} returns the head of the expression, and \code{A[[i]]} returns the $i^{th}$ argument. At the discretion of the internal compiler, \Mathematica{} arrays may be represented internally as expression trees, with each level of the tree represented as a continguous array of pointers first to the head and then to each part, or as ``packed arrays of machine-sized integers or real numbers'', a description which resembles the traditional array data structure \cite{mathematica:int}. To the user, however, arrays are simply nested lists \cite{mathematica:nl}, and the \code{[[]]} symbol naturally lends itself to the role of array indexing. This has two non-obvious consequences. First, it is possible to ``index'' an array with more indices than its rank; the extra indices would simply traverse into the expression contained within the matrix element. For example, \code{Array[f, {3, 4}][[3, 2]]} returns \code{f[3,2]}, whilst \code{Array[f, {3, 4}][[3, 2, 1]]} returns \code{3}. Thus the semantics of the \code{Part} symbol is more general than pure array indexing and allows for violations of the array data abstraction, which may come as a surprise to users. Second, \Mathematica{} interprets nested lists of depth $n$ as rank-$n$ multidimensionary arrays (which are termed ``tensors'' in \Mathematica), but at the same time implicitly assumes the isomorphism between, say, rank-4 arrays and matrices of matrices, which \Mathematica{} takes advantage of when displaying results in \code{MatrixForm}. For example, the code 
+\begin{verbatim}
+Zero[n_] := Table[0, ##] & @@ Table[{2}, {n}]
+\end{verbatim}
+generates the zero array of rank $n$ and size (2,2,\dots,2), which when displayed in \code{MatrixForm} will render as nested matrices and vectors, as demonstrated in Figure~\ref{fig:mathematica}.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\columnwidth]{fig-mathematica/fig.pdf}
+  \caption
+   {\label{fig:mathematica} \Mathematica's \code{MatrixForm} displays of \code{Zero[n]}, the zero array of rank $n$ and size (2,2,\dots,2), for $n=3$ and $n=6$.}
+\end{figure}
 
 %% TODO: examples of systems limited to n==3
 
