@@ -374,6 +374,10 @@ representations of such quantities that eliminate the redundant storage of
 symmetry-equivalent components. (This becomes very important in higher
 dimensions $d$ since multiplicity of redundant storage grows as O($d!$).
 
+%TODO missing theme: There's also a big question about whether arrays are static or dynamic. (immutable vs mutable types)
+
+%Stefan: The bottom line for whether something should be mutable or not is psychological: is the thing a value or a container? Integers are naturally immutable. If you modify an integer, you don't have the same integer with a different value, you have a different integer. If you have two distinct integers with the same value, they're not different, they're just different copies of the same integer. Arrays, on the other hand, are naturally mutable. If you have an array and you change the value in its first slot, you still have the same array, just with different contents. Similarly, you can have two different arrays that happen to contain the same values, but that doesn't make them the same array.
+
 %\appendix
 %\section{Appendix Title}
 %
