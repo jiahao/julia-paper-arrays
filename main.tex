@@ -84,27 +84,31 @@ unacceptable, and such code needs to be fully unrolled. Second, in some
 \item{\bf Dynamic Nature:} In some code the number of dimensions is a
 \emph{dynamic} property --- it is only known at run time.
 
-\item{\bf Specializing:} Programs may wish to treat arrays with
+\item {\bf Dimension Specialization:} Programs may wish to treat arrays with
 different numbers of dimensions very differently. A vector (1d) might
 have rather different behaviors than a matrix (2d) (for example, to
-compute a norm). This kind of
+compute a norm or SVD). This kind of
 behavior makes the number of dimensions a crucial part of program
 semantics, preventing it from remaining a compiler implementation detail.
 \end{enumerate}
 
 %TODO: Separate out point that dimensionality is semantically meaningful.
 
-% TODO: break up using enumerate
-These facts pull in different directions. The first fact asks for static
-analysis. The second fact asks for run-time flexibility. The third fact asks
-for dimensionality to be part of the type system, but partly determined
-at run time (for example, via virtual method dispatch). Current approaches
-choose a compromise. In some systems, the number of dimensions has a strict
-limit (e.g. 3 or 4), so that separate classes for each case may be written
-out in full. Other systems choose flexibility, and just accept that most
-or all operations will be dynamically dispatched. Other systems might
-provide flexibility only at compile time, for example a template library
-where the number of dimensions must be statically known.
+These facts pull in different directions:
+\begin{enumerate}
+\item Efficiency begs for static analysis.
+\item Dynamic properties call for run-time flexibility.
+\item Dimension specialization suggests that dimensionality should be part of
+the type system, but partly determined at run time (for example, via virtual
+method dispatch). 
+\end{enumerate}
+
+Current approaches choose a compromise. In some systems, the number of
+dimensions has a strict limit (e.g. 3 or 4), so that separate classes for each
+case may be written out in full. Other systems choose flexibility, and just
+accept that most or all operations will be dynamically dispatched. Other
+systems might provide flexibility only at compile time, for example a template
+library where the number of dimensions must be statically known.
 
 Arguably, arrays were the earliest data structure to be conceived of, and implemented on, computers. Implementation specifications for three-dimensional arrays go back to Konrad Zuse's Plankalk\"ul, and were also described in the reference implementation of FORTRAN I on the IBM 704 \cite{Backus:1957fa}. The programmers manual \cite[pp.~10--11]{Backus:1956pr} describes that:
 
