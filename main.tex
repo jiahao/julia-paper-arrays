@@ -404,7 +404,9 @@ any cost for the value array in the \code{Dict}.
 
 %TODO where does this fit? Stefan: Part of this story is our support for
 %immutable types since you need two things to allow this: a parametric array
-%type and immutable types to put into it.
+%type and immutable types to put into it. One other feature that's necessary
+%is that concrete types are final. You can accomplish this in other languages
+%by declaring these types to be final, but we don't have to.
 
 Here we consider the indexing rules. How to compute shapes of subarrays. How
 to deal with singleton dimensions is but a very special case even though
