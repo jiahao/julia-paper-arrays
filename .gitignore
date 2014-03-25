@@ -4,6 +4,8 @@
 *.fdb_latexmk
 *.fls
 *.log
+*.out
+*.synctex*
 *.toc
 main.dvi
 main.pdf
