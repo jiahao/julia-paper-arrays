@@ -102,7 +102,7 @@ or all operations will be dynamically dispatched. Other systems might
 provide flexibility only at compile time, for example a template library
 where the number of dimensions must be statically known.
 
-Arguably, arrays were the earliest data structure to be conceived of, and implemented on, computers. Implementation specifications for three-dimensional arrays go back to Konrad Zuse's Plankalk\"ul, and were also described in the reference implementation of FORTRAN I on the IBM 704 \cite{Backus:1956pr,Backus:1957fa}. The programmers manual describes that:
+Arguably, arrays were the earliest data structure to be conceived of, and implemented on, computers. Implementation specifications for three-dimensional arrays go back to Konrad Zuse's Plankalk\"ul, and were also described in the reference implementation of FORTRAN I on the IBM 704 \cite{Backus:1957fa}. The programmers manual \cite[pp.~10--11]{Backus:1956pr} describes that:
 
 %TODO cite http://www.catb.org/retro/plankalkuel/
 
@@ -112,11 +112,11 @@ Arguably, arrays were the earliest data structure to be conceived of, and implem
 \item The elements are stored from bottom right to top left.
 \end{enumerate}
 
-From this we can see that the first array language specification to be actually implemented specified that arrays were to be stored in a linear contiguous block in memory, that it was strided backward in memory and in column major style, and it had associated metadata about its shape which was partly user-controllable: the maximal rank was 3 (hard coded), but the size in each dimension could be user-specified.
+From this we can see that the first array language specification to be actually implemented specified that arrays were to be stored in a linear contiguous block in memory, that it was strided backward in memory and in column major style, and it had associated metadata about its shape which was partly user-controllable: the maximal rank was 3 (hard coded) \footnote{The maximal rank of an array was increased to 7 in Fortran 77, and later to 15 in Fortran 2008.}, but the size in each dimension could be user-specified.
 
 Arrays are useful mostly because the element indices can be computed at run time.
 
-%Footnote: The maximal rank of an array was increased to 7 in Fortran 77, and later to 15 in Fortran 2008.
+
 
 These design decisions were hard-baked into the FORTRAN I compiler, and have guided the design of compilers ever since.
 
@@ -128,9 +128,7 @@ In contrast, the contemporaneous \ALGOL{} 60 programming language supported dyna
 
 %TODO Fortran started with only arrays; objects were added later: Arrays were the only compound type supported by Fortran. In Fortran however, arrays were a fundamental part of the language from the very beginning, whereas objects were not introduced until the advent of Object-Oriented Fortran and Fortran 2003.
 
-%TODO Fortran dynamic arrays were only introduced officially with the ALLOCATABLE keyword of Fortran 90.
 
-In Fortran however, arrays were a fundamental part of the language from the very beginning, whereas objects were not introduced until the advent of Object-Oriented Fortran and Fortran 2003.
 
 In \Mathematica, the central data type is an expression \cite{mathematica:expr},
 \url{}, whose parts can be referenced by the \code{[[]]}, or \code{Part}, symbol \cite{mathematica:part}: \code{A[[0]]} returns the head of the expression, and \code{A[[i]]} returns the $i^{th}$ argument. At the discretion of the internal compiler, \Mathematica{} arrays may be represented internally as expression trees, with each level of the tree represented as a continguous array of pointers first to the head and then to each part, or as ``packed arrays of machine-sized integers or real numbers'', a description which resembles the traditional array data structure \cite{mathematica:int}. To the user, however, arrays are simply nested lists \cite{mathematica:nl}, and the \code{[[]]} symbol naturally lends itself to the role of array indexing. This has two non-obvious consequences. First, it is possible to ``index'' an array with more indices than its rank; the extra indices would simply traverse into the expression contained within the matrix element. For example, \code{Array[f, {3, 4}][[3, 2]]} returns \code{f[3,2]}, whilst \code{Array[f, {3, 4}][[3, 2, 1]]} returns \code{3}. Thus the semantics of the \code{Part} symbol is more general than pure array indexing and allows for violations of the array data abstraction, which may come as a surprise to users. Second, \Mathematica{} interprets nested lists of depth $n$ as rank-$n$ multidimensionary arrays (which are termed ``tensors'' in \Mathematica), but at the same time implicitly assumes the isomorphism between, say, rank-4 arrays and matrices of matrices, which \Mathematica{} takes advantage of when displaying results in \code{MatrixForm}. For example, the code 
