@@ -240,7 +240,10 @@ the defining features of arrays, as there is no guarantee that C++ will
 allocate memory in this fashion. Additionally, the distinction made between
 \code{vector}s and \code{array}s in principle could lead to very strange
 constructs that are static in some dimensions but dynamic in others, e.g. in
-the chain \code{std::vector<std::array<...>>}.
+the chain \code{std::vector<std::array<...>>}. Furthermore such nested constructs
+do not interoperate well with other part of the C++ standard library such as
+iterators or even \code{max_element}, thus limiting their usefulness
+\cite{Bavestrelli:2000ct}.
 
 In practice, the high cost of iterative containers means that such constructs
 are not widely used; instead, programs use C-style arrays or resort to
@@ -398,6 +401,14 @@ possible because only a single instance of any such type can exist, and hence
 need not actually be stored. This allows for some clever tricks like
 implementing \code{Set\{T\}} using a \code{Dict\{T,Nothing\}} to avoid paying
 any cost for the value array in the \code{Dict}.
+
+%TODO This superficially resembles the N-dimensional class template of
+%Bavestrelli:2000ct. But \code{Array<T,N>} is defined recursively using
+%C++ templates and 
+%\code{operator[]} to produce \code{Array<T,N-1>}, etc., down to the base case
+%of \code{Array<T,1>} which has to be explicitly specified. Furthermore, C++'s
+% semantics for \code{operator[]} means that indexing must recurse from
+%leftmost to rightmost index.
 
 %TODO Comment on how Mathematica claims to have multiple implementations of
 %Arrays too, but this is not within the purvey of the end user's control.
