@@ -89,12 +89,24 @@ code needs to be fully unrolled.
 \item{\bf Dynamic Nature:} In some code the number of dimensions is a
 \emph{dynamic} property --- it is only known at run time.
 
+%TODO is this really a point about static vs dynamic arrays?
+
 \item {\bf Dimension Specialization:} Programs may wish to treat arrays with
-different numbers of dimensions very differently. A vector (1d) might have
-rather different behaviors than a matrix (2d) (for example, to compute a norm
-or SVD). This kind of behavior makes the number of dimensions a crucial part
-of program semantics, preventing it from remaining a compiler implementation
-detail.
+different numbers of dimensions very differently. A vector---an intrinsically
+one-dimensional object---is conceptually very different from an $N\times1$
+matrix, which is intrinsically two-dimensional. For example, it may be important
+in certain applications to distinguish between vector norms and certain types
+of matrix norms. Also, certain computations like the singular value decomposition
+make sense only for matrices, not vectors. These differences in object semantics
+and behavior make the number of dimensions a crucial part of program semantics and
+thus cannot be merely a compiler implementation detail. Even though it is possible
+to construct an isomorphism between column vectors and $N\times1$ matrices,
+semantic differences preclude a genuine ``is-a'' relationship, and hence violates
+the Liskov substitution principle \cite{Liskov:1987da}. We can think of this
+situation as the linear algebraic counterpart to the canonical circle-ellipse
+problem \cite{Halbert:1987ut}.
+
+%TODO Something here about transposition?
 
 \end{enumerate}
 
@@ -466,11 +478,6 @@ Tim Holy's image 4-arrays. Quantum mechanics when you average out multiple
 indistinguishable particles. $n$-point correlations functions where which $k$
 indices you average out defines any number of lower-point $n-k$ point
 correlation functions.
-
-Other semantic issues: embeddings of vectors as matrix columns? Matrix version
-of circle-ellipse problem \cite{Halbert:1987ut}, a canonical example of the
-violation of the Liskov substitution principle \cite{Liskov:1987da}, analogous
-to real-complex embedding. Transposition?
 
 \subsection{Ground rules}
 Here are our ground rules:
