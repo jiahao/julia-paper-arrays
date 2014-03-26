@@ -408,6 +408,14 @@ any cost for the value array in the \code{Dict}.
 % semantics for \code{operator[]} means that indexing must recurse from
 %leftmost to rightmost index.
 
+%Jeff: A big difference is that templates require manually specifying
+%what to do at compile time vs. run time. They are effectively a
+%separate language. A single, all-run-time model is much easier to use.
+%Templates are not available at run time, so you are restricted in what
+%kinds of code you can write. For example in julia you can do `A[I...]`
+%where `I` is a heterogeneous array, and all the same definitions are
+%still applicable, but you might take a bit of performance drop.
+
 %Jeff: In the past, language abstraction mechanisms
 %were not powerful enough to define N-d arrays. The behaviors had to be
 %built in to the compiler (or inside a very elaborate C library like
