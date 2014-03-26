@@ -247,9 +247,9 @@ iterators or even \code{max_element}, thus limiting their usefulness
 
 In practice, the high cost of iterative containers means that such constructs
 are not widely used; instead, programs use C-style arrays or resort to
-external libraries like \code{Boost.MultiArray}, which use complicated
-template metaprogramming techniques to achieve performance
-\cite{Garcia:2005ma}.
+external libraries like \code{Blitz++} \cite{Veldhuizen:1998ab} or
+\code{Boost.MultiArray} \cite{Garcia:2005ma}, which use complicated
+template metaprogramming techniques to achieve performance.
 
 Boost MultiArrays are completely defined by four properties: the memory
 address of the origin element, shape, index bases (first index in each
