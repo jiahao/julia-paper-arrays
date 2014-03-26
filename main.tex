@@ -302,9 +302,7 @@ implicitly assumes the isomorphism between, say, rank-4 arrays and matrices of
 matrices, which \Mathematica{} takes advantage of when displaying results in
 \code{MatrixForm}. For example, the code
 \begin{verbatim}
-
 Zero[n_] := Table[0, ##] & @@ Table[{2}, {n}]
-
 \end{verbatim}
 generates the zero array of rank $n$ and size (2,2,\dots,2), which when 
 displayed in \code{MatrixForm} will render as nested matrices and vectors, as 
@@ -349,11 +347,8 @@ ambiguity has to be resolved with an arbitrary design decision.
 
 \MATLAB{} also allows indexing with matrices, but they are treated as if they
 were flattened for indexing purposes, i.e.
-
 \begin{verbatim}
-
 A(M1, M2, dots) = A(M1(:), M2(:)), dots
-
 \end{verbatim}
 
 There is also something very funky with \MATLAB's cell arrays. You have to
