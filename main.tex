@@ -341,8 +341,9 @@ not quite mesh with the world of ordinary linear algebra. This unfortunately
 clashes with the \textit{linear indexing} rule in \MATLAB{} that indexing a
 multidimensional array with a single index automatically triggers a reshape.
 For example, for $A_{3\times4}$, there is an ambiguity as to whether
-\texttt{A[5]} means \texttt{B=A[:];B[5]} or \texttt{A[5,1,1,\dots]}, and this
-ambiguity has to be resolved with an arbitrary design decision.
+\texttt{A(5)} means \texttt{B=A(:);B(5)} or \texttt{A(5,1,1,\dots)}, and this
+ambiguity can only be resolved by performing a runtime bounds check as a
+consequence of an arbitrary design decision.
 
 \MATLAB{} also allows indexing with matrices, but they are treated as if they
 were flattened for indexing purposes, i.e.
