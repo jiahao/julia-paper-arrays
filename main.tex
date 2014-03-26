@@ -410,6 +410,18 @@ any cost for the value array in the \code{Dict}.
 % semantics for \code{operator[]} means that indexing must recurse from
 %leftmost to rightmost index.
 
+%Jeff: In the past, language abstraction mechanisms
+%were not powerful enough to define N-d arrays. The behaviors had to be
+%built in to the compiler (or inside a very elaborate C library like
+%numpy). In julia, method signatures plus a general-purpose (not
+%array-specific) type inference algorithm can do it. The combination
+%turns out to be very important: if you only have multiple dispatch,
+%you just have a nifty-but-slow way to write these things. If you just
+%have type inference, then you are quite limited in what you can
+%realistically infer --- for example an explicit loop over the
+%arguments to getindex is too dynamic, and you can't really infer what
+%it does.
+
 %TODO Comment on how Mathematica claims to have multiple implementations of
 %Arrays too, but this is not within the purvey of the end user's control.
 
