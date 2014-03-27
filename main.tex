@@ -315,6 +315,15 @@ rank $n$ and size (2,2,\dots,2). ($n=3$ and $n=6$ shown.) \Mathematica's
 \code{MatrixForm} function nests two dimensional structures.}
 \end{figure}
 
+%Jeff: pattern matching in Mathematica results in no data abstraction---
+%there is no difference between being a list and
+%being something represented as a list.
+%Patterns are very powerful, but the tradeoff is that there is not
+%necessarily a useful relationship between what your program does and
+%what a static analysis (based on a finite-height partial order over
+%patterns) can discover. Maybe julia could be considered a sweet spot
+%somewhere in between.
+
 \subsubsection{MATLAB}
 
 Arrays are the most fundamental data type in \MATLAB{}, and all \MATLAB{}
