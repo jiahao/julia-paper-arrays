@@ -72,6 +72,9 @@ designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
 
+For purposes of this paper an N-d
+array is a tuple of a memory buffer, shape, and possibly strides
+
 One-dimensional arrays are a simple and essential data structure found in most
 programming languages. The multi-dimensional arrays required in scientific
 computing, however, are a different beast entirely. Allowing any number of
@@ -131,7 +134,7 @@ accept that most or all operations will be dynamically dispatched. Other
 systems might provide flexibility only at compile time, for example a template
 library where the number of dimensions must be statically known.
 
-%% TODO: examples of systems limited to n==3
+%TODO: examples of systems limited to n==3
 
 Whatever decision is made, rules must be defined for how various operators act
 on dimensions. For now we will focus on indexing, since selecting parts of
@@ -227,6 +230,8 @@ single pointer, but the pointer arithmetic \code{*(\&A[0]+i)} supports only a
 single index corresponding to the raw memory offset, and you will have to do
 the indexing arithmetic manually for multidimensional arrays.
 
+%TODO Keno points out this last thing is no longer true (at least in C99)
+
 % In some sense, C does not have a disjunction between arrays and other
 % objects. In C, objects and arrays can only be accessed semantically with
 % pointers. To the extent that C has a minimalist approach to both objects and
@@ -270,7 +275,7 @@ dimension), and strides \cite{Garcia:2005ma}. In particular, the stride
 specification allows for arrays to be stored in row-major or column-major
 order (or their multidimensional generalizations) as desired.
 
-%% TODO: insert example of limited power of C++ array libraries
+%TODO: insert example of limited power of C++ array libraries
 
 \subsubsection{Mathematica}
 
@@ -498,7 +503,7 @@ How are such rules implemented? For a language with built-in multidimensional
 arrays, the compiler will analyze indexing expressions and determine an answer
 using hard-coded logic.
 
-% TODO: grab example from one of these compilers
+%TODO: grab example from one of these compilers
 
 However, this approach is not satisfying: we would rather implement the
 behavior in libraries, so that different kinds of arrays may be defined, or so
@@ -510,7 +515,7 @@ abstracton (templates) would provide better performance, but such libraries
 tend to be difficult to write (and read), and the full complement of indexing
 behavior expected by technical users strains the capabilities of such systems.
 
-% TODO: insert actual example of numpy
+%TODO: insert actual example of numpy
 
 Our dispatch mechanism permits a novel solution. If a multiple dispatch system
 supports variadic functions and argument ``splicing'' (the ability to pass a
@@ -520,7 +525,7 @@ indexing behavior can be defined as method signatures.
 This solution is still a compromise among the factors outlined above, but it
 is a new compromise that provides a net-better solution.
 
-% TODO more
+%TODO more
 
 \section{\texttt{index\_shape}}
 
@@ -528,9 +533,9 @@ Below we define a function \texttt{index\_shape} that computes the shape of a
 result array given a series of index arguments. We show three versions, each
 implementing a different rule that users in different domains might want:
 
-% TODO: point out array = (shape, data), so those are the two parts we need to
-% handle. In julia the ``data'' part is not a first class object; it is not
-% directly exposed to the user, but this is more of an implementation detail.
+%TODO: point out array = (shape, data), so those are the two parts we need to
+%handle. In julia the ``data'' part is not a first class object; it is not
+%directly exposed to the user, but this is more of an implementation detail.
 
 \begin{verbatim}
 # drop dimensions indexed with scalars
@@ -557,8 +562,8 @@ infer the rank of the result array.
 These definitions are concise, easy to write, and possible for a compiler to
 understand fully using straightforward techniques.
 
-% TODO: point out how this combines the ``object part'' and the ``array part''
-% into a coherent whole.
+%TODO: point out how this combines the ``object part'' and the ``array part''
+%into a coherent whole.
 
 %TODO put in some cleaned-up version of Jeff's derivation of the first case.
 
@@ -620,19 +625,7 @@ storage of symmetry-equivalent components. (This becomes very important in
 higher dimensions $d$ since multiplicity of redundant storage grows as
 O($d!$).
 
-%TODO missing theme: There's also a big question about whether arrays are
-%static or dynamic. (immutable vs mutable types)
-
-%Stefan: The bottom line for whether something should be mutable or not is
-%psychological: is the thing a value or a container? Integers are naturally
-%immutable. If you modify an integer, you don't have the same integer with a
-%different value, you have a different integer. If you have two distinct
-%integers with the same value, they're not different, they're just different
-%copies of the same integer. Arrays, on the other hand, are naturally mutable.
-%If you have an array and you change the value in its first slot, you still
-%have the same array, just with different contents. Similarly, you can have
-%two different arrays that happen to contain the same values, but that doesn't
-%make them the same array.
+%TODO ease of writing code for arrays of arbitrary rank?
 
 %\appendix
 %\section{Appendix Title}
