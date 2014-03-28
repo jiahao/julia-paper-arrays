@@ -34,14 +34,14 @@
                                   % (paid open-access papers, 
                                   % short abstracts)
 
-\titlebanner{Julia Arrays for Modern Technical Computing}    % These are ignored unless
-\preprintfooter{Julia Arrays for Modern Technical Computing} % 'preprint' option specified.
+\titlebanner{Array Operators Using Multiple Dispatch}    % These are ignored unless
+\preprintfooter{Array Operators Using Multiple Dispatch} % 'preprint' option specified.
 
 % \title{Array implementations in Julia}
 % \subtitle{Implementing arrays in a way that is amenable to compiler analysis}
 
-\title{Julia Arrays for Modern Technical Computing}
-\subtitle{ Managing Efficiency/Flexibility and Abstraction/Specialization Tradeoffs through Multiple Dispatch}
+\title{Array Operators Using Multiple Dispatch}
+\subtitle{ A design methodology for array implementations in dynamic languages }
 \authorinfo{Jeff Bezanson \and Jiahao Chen \and Keno Fischer \and Alan Edelman}
            {MIT Computer Science and Artificial Intelligence Laboratory}
            {\{ bezanson, jiahao, kfischer, edelman \}@csail.mit.edu}
@@ -54,7 +54,25 @@
 \maketitle
 
 \begin{abstract}
-This is the text of the abstract.
+Modern array programming systems are typically integrated with object-oriented
+languages in some way in order to obtain needed generality. However, the
+object system often does not play a significant role within the array
+implementation, which tends to be built-in to the compiler or within a
+large low-level library. Consequently the array data type is difficult to
+modify or extend, and more difficult to implement.
+
+% ??
+Arguably, efficient
+and flexible n-d arrays are one of the more difficult datatypes to implement
+at the library level.
+
+In this work, we present a new approach, as used in
+the Julia language, where the object system is used to define the behaviors
+of key array operators --- not just to organize the functionality into
+classes.
+The combination of flexible multi-method
+signatures and dataflow type inference yields a novel trade-off between
+flexibility and compiler analysis.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}

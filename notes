@@ -1,0 +1,37 @@
+prior work
+
+vs. FALCON et al
+
+dynamic type inference used to speed up existing language
+great, but what you should really do is figure out how to redesign
+the language given that technique, to take full advantage of it
+
+
+vs. C++ libraries
+
+C++ is great in that it's one of few languages powerful enough
+to define n-d arrays in a library and have it be fast.
+our approach has 3 advantages:
+
+1. templates are hard to read and write
+2. you can't implement as big a class of rules
+   must handle dimensions one at a time, recursive
+3. not available at run time
+   while static # of dimensions is probably sufficient for
+   most applications, there is a large cliff where everything
+   changes if your code is more dynamic
+
+
+vs. haskell (/ repa)
+
+has a similar recursive structure approach as templates
+
+
+vs. numpy
+
+has its own abstraction mechanisms inside its large C codebase
+- compile-time code generation
+- custom run-time dispatch mechanism
+
+we believe one powerful dispatch mechanism could subsume this
+
