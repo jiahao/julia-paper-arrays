@@ -40,8 +40,10 @@
 % \title{Array implementations in Julia}
 % \subtitle{Implementing arrays in a way that is amenable to compiler analysis}
 
-\title{Array Operators Using Multiple Dispatch}
-\subtitle{ A design methodology for array implementations in dynamic languages }
+%\title{Array Operators Using Multiple Dispatch}
+%\subt
+\title{ A design methodology for array implementations in dynamic languages }
+
 \authorinfo{Jeff Bezanson \and Jiahao Chen \and Keno Fischer \and Alan Edelman}
            {MIT Computer Science and Artificial Intelligence Laboratory}
            {\{ bezanson, jiahao, kfischer, edelman \}@csail.mit.edu}
@@ -68,7 +70,7 @@ at the library level.
 
 In this work, we present a new approach, as used in
 the Julia language, where the object system is used to define the behaviors
-of key array operators --- not just to organize the functionality into
+of key array operators \marginpar{Which operators? reshape? indexing? others?}  --- not just to organize the functionality into
 classes.
 The combination of flexible multi-method
 signatures and dataflow type inference yields a novel trade-off between
