@@ -196,10 +196,10 @@ known.
 \ALGOL{} 60 is the oldest language in this category, supporting general
 $n$-arrays that were even allowed to change size at runtime. Implementing
 these array semantics posed numerous challenges for compiler writers of the
-time cite{Randell:1964a6}. Among the innovations they produced were the
-notions of textit{dope vector} cite{Sattley:1960as, Sattley:1961as}, which
+time \cite{Randell:1964a6}. Among the innovations they produced were the
+notions of \textit{dope vector} \cite{Sattley:1960as, Sattley:1961as}, which
 contained the size and lower bound of each dimension, and the closely related
-\textit{storage mapping function} cite[pp.~80--87]{Randell:1964a6}. These
+\textit{storage mapping function} \cite[pp.~80--87]{Randell:1964a6}. These
 innovations are the first documented examples of abstracting out shape
 information from arrays.
 
@@ -255,18 +255,17 @@ shape, but also index bases (first index in each dimension) and strides
 arrays to be stored in row-major or column-major order (or their
 multidimensional generalizations) as desired.
 
-Nevertheless, template
-metaprograms are nonetheless notoriously difficult to implement and
-comprehend. While $n$-arrays can be implemented compactly using recursive
-template metaprograms \cite{Bavestrelli:2000ct}, exploiting recurrences
-between $n$-arrays and $(n-1)$-arrays, production quality libraries avoid
-explicit recurrences, implementing instead a great many special-cased
-implementations of $n$-arrays to ensure that C++ compilers unroll loops fully
-to achieve maximal performance \cite{Garcia:2005ma}. Also, C++'s semantics for
-\code{operator[]} means that indexing must recurse from leftmost to rightmost
-index. Furthermore C++ expression templates make liberal use of the static
-(compile-time) semantics which are not accessible dynamically (at runtime).
-Also you have handle dimensions one at a time.
+Nevertheless, template metaprograms are nonetheless notoriously difficult to
+implement and comprehend. While $n$-arrays can be implemented compactly using
+recursive template metaprograms \cite{Bavestrelli:2000ct}, exploiting
+recurrences between $n$-arrays and $(n-1)$-arrays, production quality
+libraries avoid explicit recurrences, implementing instead a great many
+special-cased implementations of $n$-arrays to ensure that C++ compilers
+unroll loops fully to achieve maximal performance \cite{Garcia:2005ma}. Also,
+C++'s semantics for \code{operator[]} means that indexing must recurse from
+leftmost to rightmost index. Furthermore C++ expression templates make liberal
+use of the static (compile-time) semantics which are not accessible
+dynamically (at runtime). Also you have handle dimensions one at a time.
 
 %TODO something about how this implements extra work for playing nice with STL
 %features like std::iterators?
@@ -306,6 +305,26 @@ of user-defined classes to have the same semantic behavior as arrays of built-
 in types.
 
 % Jeff calls this "just overloading".
+
+\MATLAB's array semantics pose challenges for static compilers, like
+automatically enlarging an array when a write occurs to an out-of-bounds
+reference. Static compilers essentially had to implement a \MATLAB{} type
+system to do type inference and value propagation, thus requiring additional
+compiler passes with forward interprocedural ﬂow analysis to check
+specifically for array assignments spread over multiple assignment
+statements, possible shape and range value changes due to out-of-bounds
+indexing, and also the possibility of implicit type promoting resulting from
+algebraic operations, e.g. real to complex \cite{Rose:1999tt, Li:2013mf}.
+Additionally, type checking was essential to disambiguate \MATLAB{}
+expressions like \code{A*B}, which, depending on the dimensions of \code{A} and
+\code{B}, could represent a scaling, inner product, outer product, matrix-
+matrix multiplication, matrix-vector multiplication \cite{Rose:1999tt}. FALCON
+also tries to detect symmetry of matrix (triangular, etc.) and dispatch
+appropriate BLAS routines \cite{Rose:1999tt}.
+
+%TODO It's not clear if the matrix symmetry detection is a static analysis or not.
+
+ Similar issues also pose challenges for the Octave interpreter \cite{Eaton:2001op}.
 
 %XXX \Mathematica{}
 %interprets nested lists of depth $n$ as rank-$n$ multidimensionary arrays
@@ -387,7 +406,7 @@ as the product of the scalar $B_{11}$ and the matrix product $A_{m\times n}
 
 Also, all arrays are treated as if they have an infinite number of trailing
 singleton dimensions. This reflects a later design decision in \MATLAB{} to
-support multilinear algebra \cite{matlabman:ma},  albeit in a manner that does
+support multilinear algebra \cite{matlabman:ma, Rose:1999tt},  albeit in a manner that does
 not quite mesh with the world of ordinary linear algebra. This unfortunately
 clashes with the \textit{linear indexing} rule in \MATLAB{} that indexing a
 multidimensional array with a single index automatically triggers a reshape.
