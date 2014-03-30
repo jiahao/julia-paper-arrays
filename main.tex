@@ -90,69 +90,259 @@ designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
 
-For purposes of this paper an N-d
-array is a tuple of a memory buffer, shape, and possibly strides
+Arrays are an essential data type for many programming languages for
+organizing multiple elements of the same type. (In fact, they are the oldest
+data structures to be conceived of and implemented on computers.
+\cite{Zuse:1948ua, Rojas:2000pk, Backus:1956pr}.) Nevertheless, arrays are a
+commonality amongst languages that nonetheless are divided in terms of
+implementation of underlying data structures.
 
-One-dimensional arrays are a simple and essential data structure found in most
-programming languages. The multi-dimensional arrays required in scientific
-computing, however, are a different beast entirely. Allowing any number of
-dimensions entails a significant increase in complexity. Why? The essential
-reason is that core properties of the data structure no longer fit in a
-constant amount of space. The space needed to store the sizes of the
-dimensions (the array shape) is proportional to the number of dimensions. This
-does not seem so bad, but becomes a large problem due to three additional
-facts:
+%TODO Cite Knuth TAoCP vol 1, which had something interesting to say here
+%about implementations.
+
+Unless otherwise stated, an $n$-array (or simply `array') for the purposes of
+this paper is a tuple of a memory buffer and shape information, with $n$ being
+the rank of the array. Key to implementing array semantics is the conversion
+of indices of one or more array elements into memory addresses where the
+elements are located. One-dimensional arrays are available in most programming
+languages, since the conversion of a single index into a memory offset is
+simple and straightforward. However, the general $n$-arrays which are often
+required for technical computing pose significantly greater challenges for
+authoring libraries, be they in the base library of a programming language, or
+popular third-party libraries.
+
+\section{Implementation challenges of $n$-arrays}
+
+Three specific challenges can be identified:
 
 \begin{enumerate}
 
 \item{\bf Efficiency:} Code that operates on the dimension sizes needs to be
 highly efficient. Typically the overhead of a loop is unacceptable, and such
-code needs to be fully unrolled.
+code needs to be fully unrolled. Efficiency begs for static analysis which
+would enable compile-time optimizations such as constant subexpression
+elimination of indexing computations and loop fusion/reordering of array
+traversals.
 
-\item{\bf Dynamic Nature:} In some code the number of dimensions is a
-\emph{dynamic} property --- it is only known at run time.
-
-%TODO is this really a point about static vs dynamic arrays?
+\item{\bf Dynamic Nature:} Some applications require arrays of dynamic ranks,
+i.e. the ranks are only known  at runtime. To support such applications,
+array implementations cannot use data structures that fit in a constant
+amount of memory. Dynamic properties call for runtime flexibility.
 
 \item {\bf Dimension Specialization:} Programs may wish to treat arrays with
 different numbers of dimensions very differently. A vector---an intrinsically
 one-dimensional object---is conceptually very different from an $N\times1$
-matrix, which is intrinsically two-dimensional. For example, it may be important
-in certain applications to distinguish between vector norms and certain types
-of matrix norms. Also, certain computations like the singular value decomposition
-make sense only for matrices, not vectors. These differences in object semantics
-and behavior make the number of dimensions a crucial part of program semantics and
-thus cannot be merely a compiler implementation detail. Even though it is possible
-to construct an isomorphism between column vectors and $N\times1$ matrices,
-semantic differences preclude a genuine ``is-a'' relationship, and hence violates
-the Liskov substitution principle \cite{Liskov:1987da}. We can think of this
-situation as the linear algebraic counterpart to the canonical circle-ellipse
-problem \cite{Halbert:1987ut}.
+matrix, which is intrinsically two-dimensional. For example, it may be
+important in certain applications to distinguish between vector norms and
+certain types of matrix norms. Also, certain computations like the singular
+value decomposition make sense only for matrices, not vectors. These
+differences in object semantics and behavior make the number of dimensions a
+crucial part of program semantics and thus cannot be merely a compiler
+implementation detail. Even though it is possible to construct an isomorphism
+between column vectors and $N\times1$ matrices, semantic differences preclude
+a genuine ``is-a'' relationship, and hence violates the Liskov substitution
+principle \cite{Liskov:1987da}. We can think of this situation as the linear
+algebraic counterpart to the canonical circle-ellipse problem
+\cite{Halbert:1987ut}.
 
-%TODO Something here about transposition?
+Dimension specialization suggests that dimensionality should be part of the
+type system, but partly determined at run time (for example, via virtual
+method dispatch).
 
 \end{enumerate}
 
-These facts pull in different directions:
+These three factors together call for both static and dynamic analyses of
+program semantics involving arrays. Hence, implementations of programming
+languages must choose a compromise between dividing the work between compile-
+time and runtime.
+
+\subsection{Implementation strategies for $n$-arrays}
+
+Some of the common strategies are
 
 \begin{enumerate}
 
-\item Efficiency begs for static analysis.
+\item {\bf Rank limits:} Some programming languages or their implementations
+impose a strict limit on the maximal rank of $n$-arrays.
 
-\item Dynamic properties call for run-time flexibility. 
+Fortran is perhaps the most famous example in this category: the maximal rank
+was 3 in FORTRAN I \cite{Backus:1957fa}, was increased to 7 in Fortran 777,
+and later to 15 in Fortran 2008. Furthermore, only static arrays were allowed
+until the \code{ALLOCATABLE} keyword was introduced in Fortran 90. The
+traversal semantics were hard-coded into the compiler \cite[pp.~10--
+11]{Backus:1956pr}, and index-to-offset computations lead to nontrivial
+compiler design challenges for efficient implementation, such as common
+subexpression elimination for computing strides, and loop fusion for certain
+types of array traversal \cite{Busam:1969oe}.
 
-\item Dimension specialization suggests that dimensionality should be part of the type system, but partly determined at run time (for example, via virtual method dispatch).
+%XXX Fortran started with only arrays; objects were added later: Arrays were
+%the only compound type supported by Fortran. In Fortran however, arrays were
+%a fundamental part of the language from the very beginning, whereas objects
+%were not introduced until the advent of Object-Oriented Fortran and Fortran
+%2003.
+
+%TODO examples of systems limited to n==3
+%TODO Java?
+
+The advantage of imposing rank limits is that specialized implementations for
+each rank $n$ can be written out in full. The disadvantage, of course, is that
+program expressibility is limited and it is challenging to write libraries for
+general $n$-arrays in these languages.
+
+\item {\bf Static flexibility:} Some systems provide flexibility only at
+compile time, for example a template library where the rank must be statically
+known.
+
+\ALGOL{} 60 is the oldest language in this category, supporting general
+$n$-arrays that were even allowed to change size at runtime. Implementing
+these array semantics posed numerous challenges for compiler writers of the
+time cite{Randell:1964a6}. Among the innovations they produced were the
+notions of textit{dope vector} cite{Sattley:1960as, Sattley:1961as}, which
+contained the size and lower bound of each dimension, and the closely related
+\textit{storage mapping function} cite[pp.~80--87]{Randell:1964a6}. These
+innovations are the first documented examples of abstracting out shape
+information from arrays.
+
+C is another famous example in this category. Strictly speaking, C supports
+only 1-arrays; nevertheless, nested arrays of arrays allow C programs to work
+with $n$-arrays of fixed rank. Thanks to the equivalence of pointer arithmetic
+and array indexing in C \cite[pp.~93--96]{Kernigham:1978cp}, both static and
+dynamic arrays can support the same \code{A[i][j]} indexing semantics.
+
+%TODO something about the n-dimensional circle-ellipse problem for arrays of arrays?
+
+%XXX In some sense, C does not have a disjunction between arrays and other
+% objects. In C, objects and arrays can only be accessed semantically with
+% pointers. To the extent that C has a minimalist approach to both objects and
+% arrays, they are not disjoint.
+
+%XXX Unused C++ material.
+
+% You can try to use the object system in C++ to implement arrays, but it's a
+% disaster.
+%
+% C++ does not introduce a fundamentally new way to handle arrays. One might
+% argue that dynamic and static arrays are implemented by the \code{std::vector}
+% and \code{std::array} classes of the C++ Standard Library. However, the
+% semantics are hard coded for one dimension only. Furthermore, directly
+% indexing a vector \code{a[i]} is not required to incur a bounds check (such
+% behavior is undefined by the standard), but only with the more cumbersome
+% syntax \code{a.at(i)}, which then throws an \code{std::out\_of\_range}
+% exception if \code{i} is out of bounds. In principle, a container resembling
+% multidimensional arrays can be created by chaining these classes together,
+% forming syntactically awkward constructions like
+% \code{std::vector<std::vector<...>>}. However, this strictly speaking is not
+% an array data structure if one consider a contiguous memory store to be one of
+% the defining features of arrays, as there is no guarantee that C++ will
+% allocate memory in this fashion. Additionally, the distinction made between
+% \code{vector}s and \code{array}s in principle could lead to very strange
+% constructs that are static in some dimensions but dynamic in others, e.g. in
+% the chain \code{std::vector<std::array<...>>}. Furthermore such nested constructs
+% do not interoperate well with other parts of the C++ standard library such as
+% iterators or even \code{max\_element}, thus limiting their usefulness
+% \cite{Bavestrelli:2000ct}.
+%
+% In practice, the high cost of iterative containers means that such constructs
+% are not widely used.
+
+Another prominent example is C++ third-party libraries like \code{Blitz++}
+\cite{Veldhuizen:1998ab} or \code{Boost.MultiArray} \cite{Garcia:2005ma},
+which implement $n$-arrays using C++ expression templates.
+\code{Boost.MultiArray}s are defined not just by memory store and shape, but
+also index bases (first index in each dimension) and strides
+\cite{Garcia:2005ma}. In particular, the stride specification allows for
+arrays to be stored in row-major or column-major order (or their
+multidimensional generalizations) as desired. Nevertheless, template
+metaprograms are nonetheless notoriously difficult to implement and
+comprehend. While $n$-arrays can be implemented compactly using recursive
+template metaprograms \cite{Bavestrelli:2000ct}, exploiting recurrences
+between $n$-arrays and $(n-1)$-arrays, production quality libraries avoid
+explicit recurrences, implementing instead a great many special-cased
+implementations of $n$-arrays to ensure that C++ compilers unroll loops fully
+to achieve maximal performance \cite{Garcia:2005ma}. Also, C++'s semantics for
+\code{operator[]} means that indexing must recurse from leftmost to rightmost
+index. Furthermore C++ expression templates make liberal use of the static
+(compile-time) semantics which are not accessible dynamically (at runtime).
+
+%TODO something about how this implements extra work for playing nice with STL
+%features like std::iterators?
+
+%TODO: insert example of limited power of C++ array libraries
+
+%TODO Something about transposition costs regarding implementation?
+
+\item {\bf Full flexibility:} Some systems choose flexibility, accepting that
+that most or all operations will be dynamically dispatched. Mathematica{} and
+\MATLAB{} and Python/Numpy are prominent examples in this category.
+
+\Mathematica{} implements $n$-arrays using nested lists of expressions
+\cite{mathematica:nl, mathematica:int}, with the \code{[[]]} (\code{Part})
+operator playing the role of array indexing. The flexibility engendered by the
+pattern matching semantics of \Mathematica, however, comes at a price. First,
+arrays, which are implemented as lists, are no different from ordinary lists.
+\Mathematica{} arrays are therefore leaky data abstractions. For example, it
+is possible to ``index'' an array with more indices than its rank; the extra
+indices would simply traverse into the expression contained within the matrix
+element. For example, \code{Array[f, {3, 4}][[3, 2]]} returns \code{f[3,2]},
+whilst \code{Array[f, {3, 4}][[3, 2, 1]]} returns \code{3}. Thus the semantics
+of the \code{Part} symbol is more general than pure array indexing and allows
+for violations of the array data abstraction, which may come as a surprise to
+users. Additionally, the flexibility of the \Mathematica{} language limits the
+ability of static analyses (based on a finite-height partial order over
+patterns) can discover about any given \Mathematica{} program.
+
+\MATLAB's flexibility is also potentially problematic, since user-defined
+classes can behave arbitrarily differently. Since \MATLAB{} arrays are not
+defined in terms of its object system, special care must be taken for arrays
+of user-defined classes to have the same semantic behavior as arrays of built-
+in types.
+
+% Jeff calls this "just overloading".
+
+%XXX \Mathematica{}
+%interprets nested lists of depth $n$ as rank-$n$ multidimensionary arrays
+%(which are termed ``tensors'' in \Mathematica), but at the same time
+%implicitly assumes the isomorphism between, say, rank-4 arrays and matrices of
+%matrices, which \Mathematica{} takes advantage of when displaying results in
+%\code{MatrixForm}. For example, the code
+%\begin{verbatim}
+%Zero[n_] := Table[0, ##] & @@ Table[{2}, {n}]
+%\end{verbatim}
+%generates the zero array of rank $n$ and size (2,2,\dots,2), which when 
+%displayed in \code{MatrixForm} will render as nested matrices and vectors, as 
+%demonstrated in Figure~\ref{fig:mathematica}.
+%
+%\begin{figure}
+%  \centering
+%  \includegraphics[width=\columnwidth]{fig-mathematica/fig.pdf}
+%  \caption{\label{fig:mathematica} Creating and displaying the zero array of
+%rank $n$ and size (2,2,\dots,2). ($n=3$ and $n=6$ shown.) \Mathematica's
+%\code{MatrixForm} function nests two dimensional structures.}
+%\end{figure}
+
+Another example is Python/NumPy in particular.
+
+NumPy arrays are Python objects but the mechanism of the object system don't
+play a huge role in defining behavior. Objects are lookup tables of behaviors,
+primarily centered around indexing behavior. Single indexing lookup of symbols
+which are just integers. Not very powerful - people think it is because it is
+dynamic dispatch. % Julia's approach is much more powerful.
+
+%TODO other languages: R, APL, ZPL?
 
 \end{enumerate}
 
-Current approaches choose a compromise. In some systems, the number of
-dimensions has a strict limit (e.g. 3 or 4), so that separate classes for each
-case may be written out in full. Other systems choose flexibility, and just
-accept that most or all operations will be dynamically dispatched. Other
-systems might provide flexibility only at compile time, for example a template
-library where the number of dimensions must be statically known.
+\subsection{Summary}
 
-%TODO: examples of systems limited to n==3
+Arrays suffer from dearth of abstraction - lots of manual implementation, hand
+coded into the compiler, implementation is imposed on users. Oftentimes the
+object system is disjoint from the arrays, e.g. R types, because these
+subsystems were tacked onto the language at different points in time.
+
+Implementation details: row vs column major, indexing rules, etc., constrain
+how users have to deal with stuff.
+
+\section{Array indexing}
 
 Whatever decision is made, rules must be defined for how various operators act
 on dimensions. For now we will focus on indexing, since selecting parts of
@@ -164,190 +354,9 @@ with scalars are dropped'', or ``trailing dimensions of size one are
 dropped'', or ``the rank of the result is the sum of the ranks of the
 indexes'' (as in APL).
 
-\subsection{Array implementations in other languages}
+%TODO indexing in other languages: C++, Haskell,...
 
-\subsubsection{FORTRAN}
-
-Arguably, arrays were the earliest data structure to be conceived of, and
-implemented on, computers, dating back to Konrad Zuse's Plankalk\"ul
-\cite{Zuse:1948ua, Rojas:2000pk}. However, the first implementation of arrays
-in a high-level language was described in the reference implementation of
-FORTRAN I on the IBM 704 \cite{Backus:1957fa}, where static arrays of up to
-three dimensions were allowed. The programmers' manual
-\cite[pp.~10--11]{Backus:1956pr} describes that:
-
-\begin{enumerate}
-\item The elements of the array are stored sequentially in memory.
-\item The elements are in column-major order.
-\item The elements are stored from bottom right to top left.
-\end{enumerate}
-
-From this we can see that the first array language specification to be
-actually implemented specified that arrays were to be stored in a linear
-contiguous block in memory, that it was strided backward in memory and in
-column major style, and it had associated metadata about its shape which was
-partly user-controllable: the maximal rank was 3 (hard coded) \footnote{The
-maximal rank of an array was increased to 7 in Fortran 77, and later to 15 in
-Fortran 2008.}, but the size in each dimension could be user-specified. The
-design decisions of the semantics of arrays were hard coded into the FORTRAN I
-compiler, and have guided the design of compilers ever since.
-
-%CITE Compilers textbook
-
-Static arrays are conceptually simple: a contiguous block of memory storing
-elements of identical sizes allows element indices to be computed at runtime
-efficiently and random access can happen in essentially O(1) time. At the same
-time, reducing the constant prefactor for index-to-offset computations lead to
-nontrivial compiler design challenges for efficient implementation, such as
-common subexpression elimination for computing strides, and loop fusion for
-certain types of array traversal \cite{Busam:1969oe}.
-
-%TODO Fortran started with only arrays; objects were added later: Arrays were
-%the only compound type supported by Fortran. In Fortran however, arrays were
-%a fundamental part of the language from the very beginning, whereas objects
-%were not introduced until the advent of Object-Oriented Fortran and Fortran
-%2003.
-
-\subsubsection{ALGOL 60}
-
-The arrays in Fortran were static arrays, where the size of the array is known
-and fixed at compile time and cannot be changed at runtime. \footnote{Dynamic
-arrays were introduced in the Fortran 90 standard with the \code{ALLOCATABLE}
-keyword.} In contrast, the contemporaneous \ALGOL{} 60 programming language
-supported dynamic multidimensional arrays: not only were the arrays of
-arbitrary rank, but the size of the array could also change at runtime. This
-posed a challenge for compiler writers of the time. They introduced what was
-called the \textit{dope vector} \cite{Sattley:1960as, Sattley:1961as}, which
-contained the size and lower bound of each dimension, and the closely related
-\textit{storage mapping function} \cite[pp.~80--87]{Randell:1964a6} for the
-special case of 0-based indices and is essentially equivalent to
-\code{size(A::Array)} in Julia; both contain information needed to convert
-from the multidimensional array index to a linear memory offset.
-
-\subsubsection{C}
-
-C, like Fortran before Fortran 90, traditionally supports static arrays only,
-which are allocated on the stack.　In practice, however, C can support dynamic
-arrays also: memory on the heap can be dynamically allocated and assigned a
-pointer \cite{Kernigham:1978cp}. Dynamic arrays created in this way, however,
-must implement array semantics manually, requiring the programmer to implement
-indexing and striding by hand using pointer arithmetic, and manually
-propagating information such as the extent of the trailing dimension, is can
-be lost at function call boundaries. To this extent, C takes a minimalist
-approach to arrays, where all components of array semantics must be
-implemented manually.
-
-There are two different ways you can implement dynamic multidimensional arrays
-in C. You can implement arrays of arrays, which thanks to the equivalence of
-pointer arithmetic and array indexing in C \textit{in one dimension}
-\cite[pp.~93--96]{Kernigham:1978cp}, can support the \code{A[i][j]} indexing
-semantics of static arrays. However, arrays of arrays are strictly speaking
-not true arrays because the memory is not guaranteed to be contiguous in
-memory. Alternative you can \code{malloc} a contiguous block of memory with a
-single pointer, but the pointer arithmetic \code{*(\&A[0]+i)} supports only a
-single index corresponding to the raw memory offset, and you will have to do
-the indexing arithmetic manually for multidimensional arrays.
-
-%TODO Keno points out this last thing is no longer true (at least in C99)
-
-% In some sense, C does not have a disjunction between arrays and other
-% objects. In C, objects and arrays can only be accessed semantically with
-% pointers. To the extent that C has a minimalist approach to both objects and
-% arrays, they are not disjoint.
-
-\subsubsection{C++}
-
-% You can try to use the object system in C++ to implement arrays, but it's a
-% disaster.
-
-C++ does not introduce a fundamentally new way to handle arrays. One might
-argue that dynamic and static arrays are implemented by the \code{std::vector}
-and \code{std::array} classes of the C++ Standard Library. However, the
-semantics are hard coded for one dimension only. Furthermore, directly
-indexing a vector \code{a[i]} is not required to incur a bounds check (such
-behavior is undefined by the standard), but only with the more cumbersome
-syntax \code{a.at(i)}, which then throws an \code{std::out\_of\_range}
-exception if \code{i} is out of bounds. In principle, a container resembling
-multidimensional arrays can be created by chaining these classes together,
-forming syntactically awkward constructions like
-\code{std::vector<std::vector<...>>}. However, this strictly speaking is not
-an array data structure if one consider a contiguous memory store to be one of
-the defining features of arrays, as there is no guarantee that C++ will
-allocate memory in this fashion. Additionally, the distinction made between
-\code{vector}s and \code{array}s in principle could lead to very strange
-constructs that are static in some dimensions but dynamic in others, e.g. in
-the chain \code{std::vector<std::array<...>>}. Furthermore such nested constructs
-do not interoperate well with other parts of the C++ standard library such as
-iterators or even \code{max\_element}, thus limiting their usefulness
-\cite{Bavestrelli:2000ct}.
-
-In practice, the high cost of iterative containers means that such constructs
-are not widely used; instead, programs use C-style arrays or resort to
-external libraries like \code{Blitz++} \cite{Veldhuizen:1998ab} or
-\code{Boost.MultiArray} \cite{Garcia:2005ma}, which use complicated
-template metaprogramming techniques to achieve performance.
-
-Boost MultiArrays are completely defined by four properties: the memory
-address of the origin element, shape, index bases (first index in each
-dimension), and strides \cite{Garcia:2005ma}. In particular, the stride
-specification allows for arrays to be stored in row-major or column-major
-order (or their multidimensional generalizations) as desired.
-
-%TODO: insert example of limited power of C++ array libraries
-
-\subsubsection{Mathematica}
-
-In \Mathematica, the central data type is an expression
-\cite{mathematica:expr}, whose parts can be referenced by the
-\code{[[]]}, or \code{Part}, symbol \cite{mathematica:part}: \code{A[[0]]}
-returns the head of the expression, and \code{A[[i]]} returns the $i^{th}$
-argument. At the discretion of the internal compiler, \Mathematica{} arrays
-may be represented internally as expression trees, with each level of the tree
-represented as a continguous array of pointers first to the head and then to
-each part, or as ``packed arrays of machine-sized integers or real numbers'',
-a description which resembles the traditional array data structure
-\cite{mathematica:int}. To the user, however, arrays are simply nested lists
-\cite{mathematica:nl}, and the \code{[[]]} symbol naturally lends itself to
-the role of array indexing.
-
-The implementation of \Mathematica{} arrays as nested lists has two non--obvious
-consequences. First, it is possible to ``index'' an array with more
-indices than its rank; the extra indices would simply traverse into the
-expression contained within the matrix element. For example, \code{Array[f,
-{3, 4}][[3, 2]]} returns \code{f[3,2]}, whilst \code{Array[f, {3, 4}][[3, 2,
-1]]} returns \code{3}. Thus the semantics of the \code{Part} symbol is more
-general than pure array indexing and allows for violations of the array data
-abstraction, which may come as a surprise to users. Second, \Mathematica{}
-interprets nested lists of depth $n$ as rank-$n$ multidimensionary arrays
-(which are termed ``tensors'' in \Mathematica), but at the same time
-implicitly assumes the isomorphism between, say, rank-4 arrays and matrices of
-matrices, which \Mathematica{} takes advantage of when displaying results in
-\code{MatrixForm}. For example, the code
-\begin{verbatim}
-Zero[n_] := Table[0, ##] & @@ Table[{2}, {n}]
-\end{verbatim}
-generates the zero array of rank $n$ and size (2,2,\dots,2), which when 
-displayed in \code{MatrixForm} will render as nested matrices and vectors, as 
-demonstrated in Figure~\ref{fig:mathematica}.
-
-\begin{figure}
-  \centering
-  \includegraphics[width=\columnwidth]{fig-mathematica/fig.pdf}
-  \caption{\label{fig:mathematica} Creating and displaying the zero array of
-rank $n$ and size (2,2,\dots,2). ($n=3$ and $n=6$ shown.) \Mathematica's
-\code{MatrixForm} function nests two dimensional structures.}
-\end{figure}
-
-%Jeff: pattern matching in Mathematica results in no data abstraction---
-%there is no difference between being a list and
-%being something represented as a list.
-%Patterns are very powerful, but the tradeoff is that there is not
-%necessarily a useful relationship between what your program does and
-%what a static analysis (based on a finite-height partial order over
-%patterns) can discover. Maybe julia could be considered a sweet spot
-%somewhere in between.
-
-\subsubsection{MATLAB}
+\subsection{Indexing oddities in MATLAB}
 
 Arrays are the most fundamental data type in \MATLAB{}, and all \MATLAB{}
 arrays must have at least two dimensions. Consequently, row vectors, column
@@ -388,34 +397,7 @@ index into them using \texttt{A\{...\}} instead of the usual \texttt{A(...)}.
 
 %TODO Find an example for which this causes problems?
 
-Problems for static compilers for dynamics languages? Matlab in particular?
-
-%\subsubsection{R}
-
-%\subsubsection{APL}
-
-%\subsubsection{ZPL}
-
-%\subsubsection{Python/NumPy}
-
-Problems with dynamic language implementations? Python?
-
-\subsubsection{Summary}
-
-Arrays suffer from dearth of abstraction - lots of manual implementation, hand
-coded into the compiler, implementation is imposed on users. Oftentimes the
-object system is disjoint from the arrays, e.g. R types, because these
-subsystems were tacked onto the language at different points in time. In
-NumPy, mechanisms of objects are not well used. Detailed manual mechanisms in
-C code. Custom dispatch, generated code, pretty crazy. NumPy arrays are Python
-objects but the mechanism of the object system don't play a huge role in
-defining behavior. Objects are lookup tables of behaviors, primarily centered
-around indexing behavior. Single indexing lookup of symbols which are just
-integers. Not very powerful - people think it is because it is dynamic
-dispatch. We can generalize it to be tremendously more powerful.
-
-Implementation details: row vs column major, indexing rules, etc., constrain
-how users have to deal with stuff.
+%TODO Problems for static compilers for dynamics languages? Matlab in particular?
 
 \section{Julia Arrays}
 
@@ -441,42 +423,11 @@ need not actually be stored. This allows for some clever tricks like
 implementing \code{Set\{T\}} using a \code{Dict\{T,Nothing\}} to avoid paying
 any cost for the value array in the \code{Dict}.
 
-%TODO This superficially resembles the N-dimensional class template of
-%Bavestrelli:2000ct. But \code{Array<T,N>} is defined recursively using
-%C++ templates and 
-%\code{operator[]} to produce \code{Array<T,N-1>}, etc., down to the base case
-%of \code{Array<T,1>} which has to be explicitly specified. Furthermore, C++'s
-% semantics for \code{operator[]} means that indexing must recurse from
-%leftmost to rightmost index.
+Contrast the Julia approach to the C++ expression template approach. Julia, as a dynamic language, does not have separate static and dynamic semantics. Unlike templares, which are effectively a separate language, the single all-runtime model of Julia is much easier to use and imposes fewer restrictions on the kind of Julia code that can be written. For example in julia you can do `A[I...]`
+where `I` is a heterogeneous array, and all the same definitions are
+still applicable, but you might take a bit of performance drop.
 
-%Jeff: A big difference is that templates require manually specifying
-%what to do at compile time vs. run time. They are effectively a
-%separate language. A single, all-run-time model is much easier to use.
-%Templates are not available at run time, so you are restricted in what
-%kinds of code you can write. For example in julia you can do `A[I...]`
-%where `I` is a heterogeneous array, and all the same definitions are
-%still applicable, but you might take a bit of performance drop.
-
-%Jeff: In the past, language abstraction mechanisms
-%were not powerful enough to define N-d arrays. The behaviors had to be
-%built in to the compiler (or inside a very elaborate C library like
-%numpy). In julia, method signatures plus a general-purpose (not
-%array-specific) type inference algorithm can do it. The combination
-%turns out to be very important: if you only have multiple dispatch,
-%you just have a nifty-but-slow way to write these things. If you just
-%have type inference, then you are quite limited in what you can
-%realistically infer --- for example an explicit loop over the
-%arguments to getindex is too dynamic, and you can't really infer what
-%it does.
-
-%TODO Comment on how Mathematica claims to have multiple implementations of
-%Arrays too, but this is not within the purvey of the end user's control.
-
-%TODO where does this fit? Stefan: Part of this story is our support for
-%immutable types since you need two things to allow this: a parametric array
-%type and immutable types to put into it. One other feature that's necessary
-%is that concrete types are final. You can accomplish this in other languages
-%by declaring these types to be final, but we don't have to.
+\subsection{Indexing rules}
 
 Here we consider the indexing rules. How to compute shapes of subarrays. How
 to deal with singleton dimensions is but a very special case even though
@@ -488,7 +439,7 @@ rules that various languages have
 In Julia, such indexing rules are defined in exactly one place and can be
 changed later if so desired.
 
-\subsection{The need for flexibility in array indexing rules}
+\subsubsection{The need for flexibility in array indexing rules}
 
 Our goal here is a bit unusual: we are not concerned with which rules might
 work best, but merely with how they can be specified, so that domain experts
@@ -517,23 +468,13 @@ Here are our ground rules:
 \item The code must be reasonably easy to write
 \end{enumerate}
 
-How are such rules implemented? For a language with built-in multidimensional
-arrays, the compiler will analyze indexing expressions and determine an answer
-using hard-coded logic.
-
-%TODO: grab example from one of these compilers
-
-However, this approach is not satisfying: we would rather implement the
+Instead of the compiler will analyze indexing expressions and determining an answer
+using hard-coded logic, we would rather implement the
 behavior in libraries, so that different kinds of arrays may be defined, or so
 that rules of similar complexity may be defined for other kinds of objects.
 But these kinds of rules are unusually difficult to implement in libraries. If
 a library writes out its indexing logic using imperative code, the host
-language compiler is not likely to be able to analyze it. Using compile-time
-abstracton (templates) would provide better performance, but such libraries
-tend to be difficult to write (and read), and the full complement of indexing
-behavior expected by technical users strains the capabilities of such systems.
-
-%TODO: insert actual example of numpy
+language compiler is not likely to be able to analyze it. 
 
 Our dispatch mechanism permits a novel solution. If a multiple dispatch system
 supports variadic functions and argument ``splicing'' (the ability to pass a
@@ -545,15 +486,11 @@ is a new compromise that provides a net-better solution.
 
 %TODO more
 
-\section{\texttt{index\_shape}}
+\subsection{\texttt{index\_shape}}
 
 Below we define a function \texttt{index\_shape} that computes the shape of a
 result array given a series of index arguments. We show three versions, each
 implementing a different rule that users in different domains might want:
-
-%TODO: point out array = (shape, data), so those are the two parts we need to
-%handle. In julia the ``data'' part is not a first class object; it is not
-%directly exposed to the user, but this is more of an implementation detail.
 
 \begin{verbatim}
 # drop dimensions indexed with scalars
@@ -583,8 +520,6 @@ understand fully using straightforward techniques.
 %TODO: point out how this combines the ``object part'' and the ``array part''
 %into a coherent whole.
 
-%TODO put in some cleaned-up version of Jeff's derivation of the first case.
-
 The result type is determined using only dataflow type inference, plus a rule
 for splicing an immediate container (the type of \texttt{f((a,b)...)} is the
 type of \texttt{f(a,b)}). Argument list destructuring takes place inside the
@@ -597,7 +532,6 @@ inference. This process reaches the base case \texttt{()} for these
 definitions, since each recursive call handles a shorter argument list (for
 less-well-behaved definitions, we might end up invoking a widening operator
 instead).
-
 
 \begin{verbatim}
 
@@ -614,7 +548,6 @@ infrastructure that applies to full arrays automatically works for subarrays.
 Views are just another thing that implement the array protocol: (length, size,
 getindex). Is there a point here about code reuse? Maybe but Jeff thinks it's
 not crucial.
-
 
 \section{Extensions of the idea}
 
@@ -643,7 +576,19 @@ storage of symmetry-equivalent components. (This becomes very important in
 higher dimensions $d$ since multiplicity of redundant storage grows as
 O($d!$).
 
-%TODO ease of writing code for arrays of arbitrary rank?
+\section{Conclusions}
+
+Compare Julia to the past: language abstraction mechanisms
+were not powerful enough to define N-d arrays. The behaviors had to be
+built in to the compiler (or inside a very elaborate C library like
+numpy). In julia, method signatures plus a general-purpose (not
+array-specific) type inference algorithm can do it. The combination
+turns out to be very important: if you only have multiple dispatch,
+you just have a nifty-but-slow way to write these things. If you just
+have type inference, then you are quite limited in what you can
+realistically infer --- for example an explicit loop over the
+arguments to getindex is too dynamic, and you can't really infer what
+it does.
 
 %\appendix
 %\section{Appendix Title}
