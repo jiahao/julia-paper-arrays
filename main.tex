@@ -245,14 +245,17 @@ dynamic arrays can support the same \code{A[i][j]} indexing semantics.
 % In practice, the high cost of iterative containers means that such constructs
 % are not widely used.
 
-Another prominent example is C++ third-party libraries like \code{Blitz++}
-\cite{Veldhuizen:1998ab} or \code{Boost.MultiArray} \cite{Garcia:2005ma},
-which implement $n$-arrays using C++ expression templates.
-\code{Boost.MultiArray}s are defined not just by memory store and shape, but
-also index bases (first index in each dimension) and strides
+Another prominent example is C++. C++ is sufficiently powerful to allow the
+implementation $n$-arrays in fast, performant libraries. Notable examples
+include \code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
+\cite{Garcia:2005ma}, which implement $n$-arrays using C++ expression
+templates. \code{Boost.MultiArray}s are defined not just by memory store and
+shape, but also index bases (first index in each dimension) and strides
 \cite{Garcia:2005ma}. In particular, the stride specification allows for
 arrays to be stored in row-major or column-major order (or their
-multidimensional generalizations) as desired. Nevertheless, template
+multidimensional generalizations) as desired.
+
+Nevertheless, template
 metaprograms are nonetheless notoriously difficult to implement and
 comprehend. While $n$-arrays can be implemented compactly using recursive
 template metaprograms \cite{Bavestrelli:2000ct}, exploiting recurrences
@@ -263,6 +266,7 @@ to achieve maximal performance \cite{Garcia:2005ma}. Also, C++'s semantics for
 \code{operator[]} means that indexing must recurse from leftmost to rightmost
 index. Furthermore C++ expression templates make liberal use of the static
 (compile-time) semantics which are not accessible dynamically (at runtime).
+Also you have handle dimensions one at a time.
 
 %TODO something about how this implements extra work for playing nice with STL
 %features like std::iterators?
@@ -270,6 +274,10 @@ index. Furthermore C++ expression templates make liberal use of the static
 %TODO: insert example of limited power of C++ array libraries
 
 %TODO Something about transposition costs regarding implementation?
+
+%TODO A static # of dimensions is probably sufficient for
+% most applications, but there is a large cliff where everything
+% changes if your code is more dynamic
 
 \item {\bf Full flexibility:} Some systems choose flexibility, accepting that
 that most or all operations will be dynamically dispatched. Mathematica{} and
@@ -323,10 +331,12 @@ in types.
 Another example is Python/NumPy in particular.
 
 NumPy arrays are Python objects but the mechanism of the object system don't
-play a huge role in defining behavior. Objects are lookup tables of behaviors,
-primarily centered around indexing behavior. Single indexing lookup of symbols
-which are just integers. Not very powerful - people think it is because it is
-dynamic dispatch. % Julia's approach is much more powerful.
+play a huge role in defining behavior. Instead, NumPy has its own abstraction
+mechanisms implemented with a large C codebase. Compile-time code generation
+with custom runtime dispatch mechanisms. Objects are lookup tables of
+behaviors, primarily centered around indexing behavior. Single indexing lookup
+of symbols which are just integers. Not very powerful - people think it is
+because it is dynamic dispatch.
 
 %TODO other languages: R, APL, ZPL?
 
@@ -423,18 +433,34 @@ need not actually be stored. This allows for some clever tricks like
 implementing \code{Set\{T\}} using a \code{Dict\{T,Nothing\}} to avoid paying
 any cost for the value array in the \code{Dict}.
 
-Contrast the Julia approach to the C++ expression template approach. Julia, as a dynamic language, does not have separate static and dynamic semantics. Unlike templares, which are effectively a separate language, the single all-runtime model of Julia is much easier to use and imposes fewer restrictions on the kind of Julia code that can be written. For example in julia you can do `A[I...]`
-where `I` is a heterogeneous array, and all the same definitions are
-still applicable, but you might take a bit of performance drop.
+Contrast the Julia approach to static compilers for other dynamic languages,
+e.g. FALCON (a \MATLAB{} static compiler). The latter use dynamic type
+inference used to speed up existing language implementation. Great, but what
+you should really do is figure out how to redesign the language given that
+technique, to take full advantage of it.
+
+Contrast the Julia approach to the C++ expression template approach. Julia, as
+a dynamic language, does not have separate static and dynamic semantics.
+Unlike templares, which are effectively a separate language, the single all-
+runtime model of Julia is much easier to use and imposes fewer restrictions on
+the kind of Julia code that can be written. You can implement a bigger class
+of rules in Julia rather than having to special case on the number of
+dimensions or be forced to rely on recursive definitions onto subarrays. For
+example in julia you can do `A[I...]` where `I` is a heterogeneous array, and
+all the same definitions are still applicable, but you might take a bit of
+performance drop.
+
+Contrast the Julia approach to NumPy's. NumPy has single indexing lookup of
+symbols which are just integers. Dynamic dispatch is powerful, but Julia's
+approach is much more powerful. We believe that a single powerful dispatch
+mechanism can subsume both the compile-time code generation challenges and
+custom run-time dynamic dispatch mechanism in NumPy.
 
 \subsection{Indexing rules}
 
 Here we consider the indexing rules. How to compute shapes of subarrays. How
 to deal with singleton dimensions is but a very special case even though
 superficially the rules mention them explicitly.
-
-Here is a good place to use Julia code to codify all the various indexing
-rules that various languages have
 
 In Julia, such indexing rules are defined in exactly one place and can be
 changed later if so desired.
