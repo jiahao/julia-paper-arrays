@@ -100,16 +100,16 @@ implementation of underlying data structures.
 %TODO Cite Knuth TAoCP vol 1, which had something interesting to say here
 %about implementations.
 
-Unless otherwise stated, an $n$-array (or simply `array') for the purposes of
-this paper is a tuple of a memory buffer and shape information, with $n$ being
-the rank of the array. Key to implementing array semantics is the conversion
-of indices of one or more array elements into memory addresses where the
-elements are located. One-dimensional arrays are available in most programming
-languages, since the conversion of a single index into a memory offset is
-simple and straightforward. However, the general $n$-arrays which are often
-required for technical computing pose significantly greater challenges for
-authoring libraries, be they in the base library of a programming language, or
-popular third-party libraries.
+Unless otherwise stated, an $n$-array (array of rank $n$, or simply `array')
+is considered in this paper to be implemented as a tuple of a memory buffer
+and shape information, with $n$ being the rank of the array. Key to
+implementing array semantics is the conversion of indices of one or more array
+elements into memory addresses where the elements are located. 1-arrays are
+available in most programming languages, since the conversion of a single
+index into a memory offset is simple and straightforward. However, the general
+$n$-arrays which are often required for technical computing pose significantly
+greater challenges for authoring libraries, be they in the base library of a
+programming language, or popular third-party libraries.
 
 \section{Implementation challenges of $n$-arrays}
 
@@ -124,12 +124,12 @@ would enable compile-time optimizations such as constant subexpression
 elimination of indexing computations and loop fusion/reordering of array
 traversals.
 
-\item{\bf Dynamic Nature:} Some applications require arrays of dynamic ranks,
-i.e. the ranks are only known  at runtime. To support such applications,
-array implementations cannot use data structures that fit in a constant
-amount of memory. Dynamic properties call for runtime flexibility.
+\item{\bf Dynamic applications:} Some applications require arrays of dynamic
+ranks, i.e. the ranks are only known at runtime. To support such applications,
+array implementations cannot use data structures that fit in a constant amount
+of memory. Dynamic properties call for runtime flexibility.
 
-\item {\bf Dimension Specialization:} Programs may wish to treat arrays with
+\item {\bf Dimension specialization:} Programs may wish to treat arrays with
 different numbers of dimensions very differently. A vector---an intrinsically
 one-dimensional object---is conceptually very different from an $N\times1$
 matrix, which is intrinsically two-dimensional. For example, it may be
@@ -156,7 +156,7 @@ program semantics involving arrays. Hence, implementations of programming
 languages must choose a compromise between dividing the work between compile-
 time and runtime.
 
-\subsection{Implementation strategies for $n$-arrays}
+\subsection{Implementation strategies for arrays}
 
 Some of the common strategies are
 
@@ -274,6 +274,30 @@ dynamically (at runtime). Also you have handle dimensions one at a time.
 
 %TODO Something about transposition costs regarding implementation?
 
+Haskell is another useful example. A purely functional like Haskell, which
+disallows imperative constructs like loops, arguably forces programmers to
+identify abstractions. With fewer options to impleent semantics, semantics is
+more intimately tied to types. You can see this in the Repa (Regular Parallel
+Arrays) library. One key abstraction is the \code{Shape} class, which enables
+dispatch on the index-to-offset mapping function \cite{Keller:2010rs}. This
+allows for in-memory representations of transposed arrays, simply by changing
+the \code{Shape} class to redefine the memory striding rules
+\cite{Keller:2010rs}.
+
+Repa still has some issues though. There is an intrinsic recurrence over array
+rank that is reminiscent of the C++ expression template approach
+\cite{Keller:2010rs}. For example, reductions like \code{Sum} are only defined
+over the last index \cite{Keller:2010rs}. In principle, a generalized
+\code{Sum} over an arbitrary index can be composed as \code{Sum} with pre- and
+post-permutations to swap the desired index with the last index. Howevver,
+this is semantically more work and furthermore isn't guaranteed to produce a
+good memory traversal pattern. Similarly, operations over more than one
+dimension are implemented recursively over the dimensions, which means that
+the compiler has to make the difficult decision whether or not to unroll the
+recursion \cite{Lippmeier:2011ep}. Manual unrolling is of course a possibility
+but has the cost of introducing repitition in the code
+\cite{Lippmeier:2012gp}.
+
 %TODO A static # of dimensions is probably sufficient for
 % most applications, but there is a large cliff where everything
 % changes if your code is more dynamic
@@ -324,7 +348,7 @@ appropriate BLAS routines \cite{Rose:1999tt}.
 
 %TODO It's not clear if the matrix symmetry detection is a static analysis or not.
 
- Similar issues also pose challenges for the Octave interpreter \cite{Eaton:2001op}.
+Similar issues also pose challenges for the Octave interpreter \cite{Eaton:2001op}.
 
 %XXX \Mathematica{}
 %interprets nested lists of depth $n$ as rank-$n$ multidimensionary arrays
@@ -351,11 +375,10 @@ Another example is Python/NumPy in particular.
 
 NumPy arrays are Python objects but the mechanism of the object system don't
 play a huge role in defining behavior. Instead, NumPy has its own abstraction
-mechanisms implemented with a large C codebase. Compile-time code generation
-with custom runtime dispatch mechanisms. Objects are lookup tables of
-behaviors, primarily centered around indexing behavior. Single indexing lookup
-of symbols which are just integers. Not very powerful - people think it is
-because it is dynamic dispatch.
+mechanisms implemented with a large C codebase for compile-time code
+generation and custom runtime dispatch mechanisms. The resulting Python
+objects are little more than lookup tables of behaviors, primarily centered
+around indexing behavior, and in particular indexing of a single index.
 
 %TODO other languages: R, APL, ZPL?
 
@@ -406,14 +429,14 @@ as the product of the scalar $B_{11}$ and the matrix product $A_{m\times n}
 
 Also, all arrays are treated as if they have an infinite number of trailing
 singleton dimensions. This reflects a later design decision in \MATLAB{} to
-support multilinear algebra \cite{matlabman:ma, Rose:1999tt},  albeit in a manner that does
-not quite mesh with the world of ordinary linear algebra. This unfortunately
-clashes with the \textit{linear indexing} rule in \MATLAB{} that indexing a
-multidimensional array with a single index automatically triggers a reshape.
-For example, for $A_{3\times4}$, there is an ambiguity as to whether
-\texttt{A(5)} means \texttt{B=A(:);B(5)} or \texttt{A(5,1,1,\dots)}, and this
-ambiguity can only be resolved by performing a runtime bounds check as a
-consequence of an arbitrary design decision.
+support multilinear algebra \cite{matlabman:ma, Rose:1999tt}, albeit in a
+manner that does not quite mesh with the world of ordinary linear algebra.
+This unfortunately clashes with the \textit{linear indexing} rule in \MATLAB{}
+that indexing a multidimensional array with a single index automatically
+triggers a reshape. For example, for $A_{3\times4}$, there is an ambiguity as
+to whether \texttt{A(5)} means \texttt{B=A(:);B(5)} or
+\texttt{A(5,1,1,\dots)}, and this ambiguity can only be resolved by performing
+a runtime bounds check as a consequence of an arbitrary design decision.
 
 \MATLAB{} also allows indexing with matrices, but they are treated as if they
 were flattened for indexing purposes, i.e.
@@ -474,6 +497,16 @@ symbols which are just integers. Dynamic dispatch is powerful, but Julia's
 approach is much more powerful. We believe that a single powerful dispatch
 mechanism can subsume both the compile-time code generation challenges and
 custom run-time dynamic dispatch mechanism in NumPy.
+
+Contrast the Julia approach to Haskell/Repa. Statically typed languages tend
+to favor recursion down array ranks one at a time, which limit how you can do
+operations across multiple dimensions. In Julia we have access to the entire
+argument list, which lets you have different mental models and APIs.
+Multiple dispatch is also a powerful alternative to the single dispatch
+mechanism of Haskell based on function classes and pattern matching, which Repa
+uses extensively to implement the many array representations which were
+introduced to deal with many different use cases
+\cite{Lippmeier:2011ep,Lippmeier:2012gp}.
 
 \subsection{Indexing rules}
 
@@ -584,6 +617,18 @@ diverge() = randbool() ? () : tuple(1, diverge()...)
 
 \end{verbatim}
 
+This is an example of indexing behavior that is not amenable to useful static
+analysis, since each branch of \code{diverge()} has different types.
+
+%TODO say something about how types of tuples in Julia are defined.
+
+Such code would throw a type error in languages requiring statically
+checkableness such as Haskell. But in Julia, this is still allowed just that
+the compiler may not have useful information from static analysis and so may
+not run as fast. In Repa, the top priority is to appease the type system of
+Haskell, with performance and user interface secondary. We think it should be
+the other way round.
+
 \section{Array views (Dahua's stuff)}
 
 Also interesting are array views. In certain cases of subarray slicing, it is
@@ -623,17 +668,48 @@ O($d!$).
 
 \section{Conclusions}
 
-Compare Julia to the past: language abstraction mechanisms
-were not powerful enough to define N-d arrays. The behaviors had to be
-built in to the compiler (or inside a very elaborate C library like
-numpy). In julia, method signatures plus a general-purpose (not
-array-specific) type inference algorithm can do it. The combination
-turns out to be very important: if you only have multiple dispatch,
-you just have a nifty-but-slow way to write these things. If you just
-have type inference, then you are quite limited in what you can
-realistically infer --- for example an explicit loop over the
-arguments to getindex is too dynamic, and you can't really infer what
-it does.
+A well-designed language force programmers to write code in ways that are
+amenable to static analysis. Technically speaking you can say that the
+inability to do static analysis is a weakness of compiler implementation, but
+this is also a point about the ``power'' of a language. Compare Julia to the
+past: language abstraction mechanisms were not powerful enough to define
+$n$-arrays. The behaviors had to be built in to the compiler (or inside a very
+elaborate C library like numpy). In julia, method signatures plus a general-
+purpose (not array-specific) type inference algorithm can do it. The
+combination turns out to be very important: if you only have multiple
+dispatch, you just have a nifty-but-slow way to write these things. If you
+just have type inference, then you are quite limited in what you can
+realistically infer --- for example an explicit loop over the arguments to
+getindex is too dynamic, and you can't really infer what it does.
+
+Languages have to compromise between static (compiler) analysis - accept more
+restrictions so that you can do more static analyses - vs user ease of writing
+programs. Other dynamic languages lack extensive static analysis capabilities
+in their default implementations. Implementations with some modicum of static
+analysis can result in large performance gains, like FALCON or Hack
+\cite{Verlaguet:2014hn}. But in Julia, we are going one step futher and
+turning the combination of multiple dispatch and automatic type inference from
+a performance optimization hack, into a genuine feature of the programming
+language, and designing a programming language to fully leverage the power of
+this combination. Automatic type inference reduces the need for manual,
+tedious type annotation and reduced redundancy in code. At the same time,
+types in dispatch signatures give you access to behavior specialization through
+multiple dispatch, thus enabling better performance. 
+
+In contrast with statically typed languages like Haskell, Julia by virtue of
+being a dynamic language can take a more liberal view on type correctness.
+While Julia makes every attempt to infer type information from static
+analysis, Julia does not create any issues over type correctness, but rather
+execute code anyway in the absence of detailed type information. Contrast this
+with the behavior of C++, which is a static language with separate static and
+dynamic semantics. C++ resolves function overloads at compile time; this isn't
+something you can do at runtime.
+
+Automatic type inference allows for a lot of static analysis without a static
+type system. Julia says we do a lot statically without a static type system.
+The design idea is that languages with static types assert that the latter are
+necessary for correctness. But it is also possible that with static analaysis
+that the code can be more performant due to specialization.
 
 %\appendix
 %\section{Appendix Title}
