@@ -80,7 +80,8 @@ flexibility and compiler analysis.
 %\category{CR-number}{subcategory}{third-level}
 
 \keywords
-Julia, multiple dispatch
+Julia, multiple dispatch, type inference, array indexing, static analysis,
+dynamic dispatch
 
 \section{Introduction}
 
@@ -136,16 +137,16 @@ different numbers of dimensions very differently. A vector---an intrinsically
 one-dimensional object---is conceptually very different from an $N\times1$
 matrix, which is intrinsically two-dimensional. For example, it may be
 important in certain applications to distinguish between vector norms and
-certain types of matrix norms. Also, certain computations like the singular
-value decomposition make sense only for matrices, not vectors. These
-differences in object semantics and behavior make the number of dimensions a
-crucial part of program semantics and thus cannot be merely a compiler
-implementation detail. Even though it is possible to construct an isomorphism
-between column vectors and $N\times1$ matrices, semantic differences preclude
-a genuine ``is-a'' relationship, and hence violates the Liskov substitution
-principle \cite{Liskov:1987da}. We can think of this situation as the linear
-algebraic counterpart to the canonical circle-ellipse problem
-\cite{Halbert:1987ut}.
+certain types of matrix norms. Also, many linear algebraic computations like
+the singular value decomposition make sense only for matrices, not vectors.
+These differences in object semantics and behavior make the number of
+dimensions a crucial part of program semantics and thus cannot be merely a
+compiler implementation detail. Even though it is possible to construct an
+isomorphism between column vectors and $N\times1$ matrices, semantic
+differences preclude a genuine ``is-a'' relationship, and hence results in a
+violation of the Liskov substitution principle \cite{Liskov:1987da}. We can
+think of this situation as the linear algebraic counterpart to the canonical
+circle-ellipse problem \cite{Halbert:1987ut}.
 
 Dimension specialization suggests that dimensionality should be part of the
 type system, but partly determined at run time (for example, via virtual
@@ -168,7 +169,7 @@ Some of the common strategies are
 impose a strict limit on the maximal rank of $n$-arrays.
 
 Fortran is perhaps the most famous example in this category: the maximal rank
-was 3 in FORTRAN I \cite{Backus:1957fa}, was increased to 7 in Fortran 777,
+was 3 in FORTRAN I \cite{Backus:1957fa}, was increased to 7 in Fortran 77,
 and later to 15 in Fortran 2008. Furthermore, only static arrays were allowed
 until the \code{ALLOCATABLE} keyword was introduced in Fortran 90. The
 traversal semantics were hard-coded into the compiler \cite[pp.~10--
@@ -248,7 +249,7 @@ dynamic arrays can support the same \code{A[i][j]} indexing semantics.
 % are not widely used.
 
 Another prominent example is C++. C++ is sufficiently powerful to allow the
-implementation $n$-arrays in fast, performant libraries. Notable examples
+implementation of $n$-arrays in fast, performant libraries. Notable examples
 include \code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
 \cite{Garcia:2005ma}, which implement $n$-arrays using C++ expression
 templates. \code{Boost.MultiArray}s are defined not just by memory store and
@@ -278,7 +279,7 @@ dynamically (at runtime). Also you have handle dimensions one at a time.
 
 Haskell is another useful example. A purely functional like Haskell, which
 disallows imperative constructs like loops, arguably forces programmers to
-identify abstractions. With fewer options to impleent semantics, semantics is
+identify abstractions. With fewer options to implement semantics, semantics is
 more intimately tied to types. You can see this in the Repa (Regular Parallel
 Arrays) library. One key abstraction is the \code{Shape} class, which enables
 dispatch on the index-to-offset mapping function \cite{Keller:2010rs}. This
@@ -291,13 +292,13 @@ rank that is reminiscent of the C++ expression template approach
 \cite{Keller:2010rs}. For example, reductions like \code{Sum} are only defined
 over the last index \cite{Keller:2010rs}. In principle, a generalized
 \code{Sum} over an arbitrary index can be composed as \code{Sum} with pre- and
-post-permutations to swap the desired index with the last index. Howevver,
+post-permutations to swap the desired index with the last index. However,
 this is semantically more work and furthermore isn't guaranteed to produce a
 good memory traversal pattern. Similarly, operations over more than one
 dimension are implemented recursively over the dimensions, which means that
 the compiler has to make the difficult decision whether or not to unroll the
 recursion \cite{Lippmeier:2011ep}. Manual unrolling is of course a possibility
-but has the cost of introducing repitition in the code
+but has the cost of introducing repetition in the code
 \cite{Lippmeier:2012gp}.
 
 %TODO A static # of dimensions is probably sufficient for
@@ -336,7 +337,7 @@ in types.
 automatically enlarging an array when a write occurs to an out-of-bounds
 reference. Static compilers essentially had to implement a \MATLAB{} type
 system to do type inference and value propagation, thus requiring additional
-compiler passes with forward interprocedural ﬂow analysis to check
+compiler passes with forward interprocedural flow analysis to check
 specifically for array assignments spread over multiple assignment
 statements, possible shape and range value changes due to out-of-bounds
 indexing, and also the possibility of implicit type promoting resulting from
@@ -377,7 +378,7 @@ Another example is Python/NumPy in particular.
 
 NumPy arrays are Python objects but the mechanism of the object system don't
 play a huge role in defining behavior. Instead, NumPy has its own abstraction
-mechanisms implemented with a large C codebase for compile-time code
+mechanisms implemented with a large C code base for compile-time code
 generation and custom runtime dispatch mechanisms. The resulting Python
 objects are little more than lookup tables of behaviors, primarily centered
 around indexing behavior, and in particular indexing of a single index.
@@ -485,12 +486,12 @@ technique, to take full advantage of it.
 
 Contrast the Julia approach to the C++ expression template approach. Julia, as
 a dynamic language, does not have separate static and dynamic semantics.
-Unlike templares, which are effectively a separate language, the single all-
+Unlike templates, which are effectively a separate language, the single all-
 runtime model of Julia is much easier to use and imposes fewer restrictions on
 the kind of Julia code that can be written. You can implement a bigger class
 of rules in Julia rather than having to special case on the number of
 dimensions or be forced to rely on recursive definitions onto subarrays. For
-example in julia you can do `A[I...]` where `I` is a heterogeneous array, and
+example in Julia you can do `A[I...]` where `I` is a heterogeneous array, and
 all the same definitions are still applicable, but you might take a bit of
 performance drop.
 
@@ -678,7 +679,7 @@ inability to do static analysis is a weakness of compiler implementation, but
 this is also a point about the ``power'' of a language. Compare Julia to the
 past: language abstraction mechanisms were not powerful enough to define
 $n$-arrays. The behaviors had to be built in to the compiler (or inside a very
-elaborate C library like numpy). In julia, method signatures plus a general-
+elaborate C library like NumPy). In Julia, method signatures plus a general-
 purpose (not array-specific) type inference algorithm can do it. The
 combination turns out to be very important: if you only have multiple
 dispatch, you just have a nifty-but-slow way to write these things. If you
@@ -691,7 +692,7 @@ restrictions so that you can do more static analyses - vs user ease of writing
 programs. Other dynamic languages lack extensive static analysis capabilities
 in their default implementations. Implementations with some modicum of static
 analysis can result in large performance gains, like FALCON or Hack
-\cite{Verlaguet:2014hn}. But in Julia, we are going one step futher and
+\cite{Verlaguet:2014hn}. But in Julia, we are going one step further and
 turning the combination of multiple dispatch and automatic type inference from
 a performance optimization hack, into a genuine feature of the programming
 language, and designing a programming language to fully leverage the power of
@@ -712,7 +713,7 @@ something you can do at runtime.
 Automatic type inference allows for a lot of static analysis without a static
 type system. Julia says we do a lot statically without a static type system.
 The design idea is that languages with static types assert that the latter are
-necessary for correctness. But it is also possible that with static analaysis
+necessary for correctness. But it is also possible that with static analysis
 that the code can be more performant due to specialization.
 
 %\appendix
