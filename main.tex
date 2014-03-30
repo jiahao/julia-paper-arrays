@@ -492,11 +492,10 @@ example in julia you can do `A[I...]` where `I` is a heterogeneous array, and
 all the same definitions are still applicable, but you might take a bit of
 performance drop.
 
-Contrast the Julia approach to NumPy's. NumPy has single indexing lookup of
-symbols which are just integers. Dynamic dispatch is powerful, but Julia's
-approach is much more powerful. We believe that a single powerful dispatch
-mechanism can subsume both the compile-time code generation challenges and
-custom run-time dynamic dispatch mechanism in NumPy.
+Contrast the Julia approach to NumPy's. Dynamic dispatch is powerful, but
+Julia's approach is much more powerful. We believe that a single powerful
+dispatch mechanism can subsume both the compile-time code generation
+challenges and custom run-time dynamic dispatch mechanism in NumPy.
 
 Contrast the Julia approach to Haskell/Repa. Statically typed languages tend
 to favor recursion down array ranks one at a time, which limit how you can do
@@ -597,6 +596,9 @@ understand fully using straightforward techniques.
 
 %TODO: point out how this combines the ``object part'' and the ``array part''
 %into a coherent whole.
+%This is really a statement about implementing array semantics in language X
+%using language X itself, and in particular using intrinsic features for handling
+%objects to also handle arrays.
 
 The result type is determined using only dataflow type inference, plus a rule
 for splicing an immediate container (the type of \texttt{f((a,b)...)} is the
