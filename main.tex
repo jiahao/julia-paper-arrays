@@ -47,6 +47,8 @@
 \authorinfo{Jeff Bezanson \and Jiahao Chen \and Keno Fischer \and Alan Edelman}
            {MIT Computer Science and Artificial Intelligence Laboratory}
            {\{ bezanson, jiahao, kfischer, edelman \}@csail.mit.edu}
+           
+       \subtitle{   [Add Stefan and Viral??] }
 
 %TODO Get Dahua to sign on as coauthor
 %\authorinfo{Dahua Lin}
@@ -56,25 +58,30 @@
 \maketitle
 
 \begin{abstract}
-Modern array programming systems are typically integrated with object-oriented
-languages in some way in order to obtain needed generality. However, the
-object system often does not play a significant role within the array
-implementation, which tends to be built-in to the compiler or within a
-large low-level library. Consequently the array data type is difficult to
-modify or extend, and more difficult to implement.
 
-% ??
-Arguably, efficient
-and flexible n-d arrays are one of the more difficult datatypes to implement
-at the library level.
+Arrays, the most basic of data structures, tends to be built in to a language early
+either in the compiler or a large low-level library. 
+More recent developments
+beg for more flexibility and generality, as
+modern array programming systems are typically integrated with object-oriented
+languages.  A consequence of the traditional approach is that the array data type is difficult to
+modify or extend, and is even unnecessarily more difficult to implement.
 
-In this work, we present a new approach, as used in
-the Julia language, where the object system is used to define the behaviors
-of key array operators \marginpar{Which operators? reshape? indexing? others?}  --- not just to organize the functionality into
+% ??  [The below delays the good point]
+%Arguably, efficient
+%and flexible n-d arrays are one of the more difficult datatypes to implement
+% at the library level.
+
+In this work, we present a new approach, developed as part of 
+the Julia language project, where the object system is used to define the behaviors
+of  \framebox{  {\bf key array operators} } \marginpar{Which operators?  Which functionality?  reshape? indexing? others? too vague}  --- not just to organize the 
+\framebox{  {\bf functionality} } into
 classes.
 The combination of flexible multi-method
 signatures and dataflow type inference yields a novel trade-off between
 flexibility and compiler analysis.
+
+\framebox{The words ``multiple dispatch'', should appear in the abstract?}
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
