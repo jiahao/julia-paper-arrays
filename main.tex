@@ -3,6 +3,9 @@
 % The following \documentclass options may be useful:
 % preprint      Remove this option only once the paper is in final form.
 
+% Alan TODO:  Can we actually see some Julia arrays, in their full flexibility
+
+
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -44,12 +47,11 @@
 %\subt
 \title{ A design methodology for array implementations in dynamic languages }
 
-\authorinfo{Jeff Bezanson \and Jiahao Chen \and Keno Fischer \and Alan Edelman}
+\authorinfo{Jeff Bezanson \and Jiahao Chen \and Keno Fischer \and Stefan Karpinski \and Viral Shah  \and Alan Edelman}
            {MIT Computer Science and Artificial Intelligence Laboratory}
-           {\{ bezanson, jiahao, kfischer, edelman \}@csail.mit.edu}
+  { bezanson@csail.mit.edu, jiahao@mit.edu, kfischer@college.harvard.edu, stefan.karpinski@gmail.com, viral@mayin.org, edelman@mit.edu }
            
-       \subtitle{   [Add Stefan and Viral??] }
-
+     
 %TODO Get Dahua to sign on as coauthor
 %\authorinfo{Dahua Lin}
 %           {Toyota Technological Institute at Chicago}
@@ -185,6 +187,13 @@ time and runtime.
 \subsection{Implementation strategies for arrays}
 
 Some of the common strategies are
+
+
+[ Alan: Rank limits is one of the duller things, hardly seems even worthy of the word
+``strategy''  -- All in all, I'd like to see this refactored as fitting into contrasts with Julia,
+even as hints now with fuller explanations later  ]
+
+
 
 \begin{enumerate}
 
@@ -503,7 +512,8 @@ any cost for the value array in the \code{Dict}.
 
 Contrast the Julia approach to static compilers for other dynamic languages,
 e.g. FALCON (a \MATLAB{} static compiler). The latter use dynamic type
-inference used to speed up existing language implementation. Great, but what
+inference used to speed up existing language implementation.
+\framebox{ Great,} \marginpar{colloquial} but what
 you should really do is figure out how to redesign the language given that
 technique, to take full advantage of it.
 
@@ -562,16 +572,16 @@ indistinguishable particles. $n$-point correlations functions where which $k$
 indices you average out defines any number of lower-point $n-k$ point
 correlation functions.
 
-\subsection{Ground rules}
-Here are our ground rules:
+\subsection{Assumptions}
+Julia's hard assumptions are:
 
 \begin{enumerate}
-\item You can't manually implement the behavior inside the compiler
-\item The compiler must be able to reasonably understand the program
-\item The code must be reasonably easy to write
+\item  Array code can not be  manually implemented inside the compiler
+\item The compiler must be able to reasonably understand array programs
+\item Code must be reasonably easy to write
 \end{enumerate}
 
-Instead of the compiler will analyze indexing expressions and determining an answer
+Instead of the compiler analying indexing expressions and determining an answer
 using hard-coded logic, we would rather implement the
 behavior in libraries, so that different kinds of arrays may be defined, or so
 that rules of similar complexity may be defined for other kinds of objects.
@@ -579,6 +589,7 @@ But these kinds of rules are unusually difficult to implement in libraries. If
 a library writes out its indexing logic using imperative code, the host
 language compiler is not likely to be able to analyze it. 
 
+\marginpar{This good stuff is buried!}
 Our dispatch mechanism permits a novel solution. If a multiple dispatch system
 supports variadic functions and argument ``splicing'' (the ability to pass a
 structure of $n$ values as $n$ separate arguments to a function), then
@@ -595,27 +606,47 @@ Below we define a function \texttt{index\_shape} that computes the shape of a
 result array given a series of index arguments. We show three versions, each
 implementing a different rule that users in different domains might want:
 
+{\small
 \begin{verbatim}
 # drop dimensions indexed with scalars
 index_shape() = ()
 index_shape(i::Real, I...) = index_shape(I...)
 index_shape(i, I...) = tuple(length(i), index_shape(I...)...)
 \end{verbatim}
+}
 
+\noindent Notes: \newline
+1. \verb+i::Real+ denotes a scalar which is dropped \newline
+2. \verb+I...+ denotes the remainder of the arguments to be parsed next \newline
+3. \verb+length+ counts  elements in an array index, thereby flattening \verb+i+
+4. The rightmost three dots flatten the tuple
+
+
+{\small
 \begin{verbatim}
 # drop trailing dimensions indexed with scalars
 index_shape(i::Real...) = ()
 index_shape(i, I...) = tuple(length(i), index_shape(I...)...)
 \end{verbatim}
+}
 
+\noindent Notes: \newline
+1. \verb+i::Real...+ denotes trailings scalars  which are dropped \newline
+
+
+{\small
 \begin{verbatim}
 # rank summing (APL)
 index_shape() = ()
 index_shape(i, I...) = tuple(size(i)..., index_shape(I...)...)
 \end{verbatim}
+}
 
-Inferring the length of the result of \texttt{index\_shape} is sufficient to
-infer the rank of the result array.
+
+\noindent Notes: \newline
+1. \verb+size(i)+ in contrast to \verb+length(i)+ incorporates component index shapes \newline
+
+
 
 These definitions are concise, easy to write, and possible for a compiler to
 understand fully using straightforward techniques.
