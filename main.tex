@@ -92,6 +92,11 @@ dynamic dispatch
 
 \section{Introduction}
 
+\marginpar{This is a great quote. }
+\marginpar{ I wonder, however, if this quote was a victim
+of the more limited approaches of 40 years ago.  While I'm sure it's always true
+that users will continue to innovate and surprise, I bet we can plan for much more flexibility today!}
+
 \begin{quotation}
 ``Unfortunately, it is very difficult for a designer to select in advance all
 the abstractions which the users of his language might need. If a language is
@@ -99,6 +104,8 @@ to be used at all, it is likely to be used to solve problems which its
 designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
+
+
 
 Arrays are an essential data type for many programming languages for
 organizing multiple elements of the same type. (In fact, they are the oldest
@@ -114,7 +121,9 @@ Unless otherwise stated, an $n$-array (array of rank $n$, or simply `array')
 is considered in this paper to be implemented as a tuple of a memory buffer
 and shape information, with $n$ being the rank of the array. Key to
 implementing array semantics is the conversion of indices of one or more array
-elements into memory addresses where the elements are located. 1-arrays are
+elements into memory addresses 
+%where the elements are located.
+1-arrays are
 available in most programming languages, since the conversion of a single
 index into a memory offset is simple and straightforward. However, the general
 $n$-arrays which are often required for technical computing pose significantly
@@ -123,25 +132,25 @@ programming language, or popular third-party libraries.
 
 \section{Implementation challenges of $n$-arrays}
 
-Three specific challenges can be identified:
+Three \framebox{four?} specific challenges can be identified:
 
 \begin{enumerate}
 
-\item{\bf Efficiency:} Code that operates on the dimension sizes needs to be
+\item{\bf Efficiency:} Code that \framebox{ operates on the dimension sizes} \marginpar{ right words?} needs to be
 highly efficient. Typically the overhead of a loop is unacceptable, and such
 code needs to be fully unrolled. Efficiency begs for static analysis which
 would enable compile-time optimizations such as constant subexpression
 elimination of indexing computations and loop fusion/reordering of array
 traversals.
 
-\item{\bf Dynamic applications:} Some applications require arrays of dynamic
+\item{\bf Flexibility:} Some applications require arrays of dynamic
 ranks, i.e. the ranks are only known at runtime. To support such applications,
 array implementations cannot use data structures that fit in a constant amount
 of memory. Dynamic properties call for runtime flexibility.
 
-\item {\bf Dimension specialization:} Programs may wish to treat arrays with
+\item {\bf  Specialization:} Programs may wish to treat arrays with
 different numbers of dimensions very differently. A vector---an intrinsically
-one-dimensional object---is conceptually very different from an $N\times1$
+one-dimensional object-- can be  conceptually very different from an $N\times1$
 matrix, which is intrinsically two-dimensional. For example, it may be
 important in certain applications to distinguish between vector norms and
 certain types of matrix norms. Also, many linear algebraic computations like
@@ -159,12 +168,19 @@ Dimension specialization suggests that dimensionality should be part of the
 type system, but partly determined at run time (for example, via virtual
 method dispatch).
 
+ \item {\bf Generalization:} It is often desirable to create abstractions
+that apply to all arrays or a very large class of arrays.  Very powerful typing mechanisms
+allow for this
+
 \end{enumerate}
 
-These three factors together call for both static and dynamic analyses of
+These three \framebox{four} factors together call for both static and dynamic analyses of
 program semantics involving arrays. Hence, implementations of programming
 languages must choose a compromise between dividing the work between compile-
 time and runtime.
+
+%% I see 1--2 as a dimension, and 3--4 as a dimension, am I wrong?
+%% Let's discuss
 
 \subsection{Implementation strategies for arrays}
 
