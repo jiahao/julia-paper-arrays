@@ -3,7 +3,7 @@
 % The following \documentclass options may be useful:
 % preprint      Remove this option only once the paper is in final form.
 
-% Alan TODO:  Can we actually see some Julia arrays, in their full flexibility
+% Alan TODO:  Can we actually see some \Julia{} arrays, in their full flexibility
 
 \usepackage{amsmath}
 \usepackage{graphicx}
@@ -14,6 +14,39 @@
 \newcommand{\MATLAB}{\textsc{MATLAB}}
 \newcommand{\Mathematica}{\textit{Mathematica}}
 \newcommand{\code}[1]{\texttt{#1}}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usetikzlibrary{calc}
+
+\definecolor{mylightred}{RGB}{211,79,73}
+\definecolor{mydarkred}{RGB}{199,44,38}
+\definecolor{mylightgreen}{RGB}{78,153,67}
+\definecolor{mydarkgreen}{RGB}{43,129,33}
+\definecolor{mylightpurple}{RGB}{150,107,178}
+\definecolor{mydarkpurple}{RGB}{126,78,160}
+\definecolor{mylightblue}{RGB}{49,101,205}
+\definecolor{mydarkblue}{RGB}{20,92,205}
+
+\tikzset{
+  juliadot/.style args={#1,#2}{shape=circle,line width=0.03ex,minimum width=0.4ex,fill=#1,draw=#2}
+}
+
+\newcommand\julialetter[1]{{\strut\fontfamily{cmss}\bfseries\selectfont{#1}}}
+
+\DeclareRobustCommand\Julia{%
+\begin{tikzpicture}[baseline=0mm, every node/.style={inner sep=0mm, outer sep=0mm}]
+\node[anchor=base]        (j) at (0,0) {\julialetter{\j}};
+\node[anchor=base, right=0ex of j] (u) {\julialetter{u}};
+\node[anchor=base, right=0ex of u] (l) {\julialetter{l}};
+\node[anchor=base, right=0ex of l] (i) {\julialetter{\i}};
+\node[anchor=base, right=0ex of i] (a) {\julialetter{a}};
+\path let \p1 = (j) in node[juliadot={mylightblue,mydarkblue}] (bluedot) at (\x1+0.02ex,1.4ex) {};
+\path let \p1 = (i) in node[juliadot={mylightred,mydarkred}] (reddot) at (\x1,1.4ex) {};
+\path let \p1 = (reddot) in node[juliadot={mylightpurple,mydarkpurple}] (purpledot) at (\x1+0.5ex,\y1) {};
+\path let \p1 = (reddot) in node[juliadot={mylightgreen,mydarkgreen}] (greendot) at (\x1+0.25ex,\y1+0.42ex) {};
+\end{tikzpicture}%
+}
 
 \begin{document}
 
@@ -73,7 +106,7 @@ modify or extend, and is even unnecessarily more difficult to implement.
 % at the library level.
 
 In this work, we present a new approach, developed as part of 
-the Julia language project, where the object system is used to define the behaviors
+the \Julia{} language project, where the object system is used to define the behaviors
 of  \framebox{  {\bf key array operators} } \marginpar{Which operators?  Which functionality?  reshape? indexing? others? too vague}  --- not just to organize the 
 \framebox{  {\bf functionality} } into
 classes.
@@ -104,7 +137,7 @@ are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 
 %Introduction to multiple dispatch: traditionally it is considered an optimization
 
-%Julia philosophy: Instead of MD as a hack, turn it around and make it a core feature of the language.
+%\Julia{} philosophy: Instead of MD as a hack, turn it around and make it a core feature of the language.
 
 %In this paper we show how to use MD to implement semantic features.
 
@@ -304,9 +337,9 @@ allows for reasonable performance in most use cases.
 %but there is a large cliff where everything changes if your code is more
 %dynamic
 
-\section{Julia Arrays}
+\section{Julia arrays}
 
-Arrays are implemented in Julia\cite{Bezanson:2012jf} as the \code{Array}
+Arrays are implemented in \Julia{} \cite{Bezanson:2012jf} as the \code{Array}
 data type, which is parametric on the \code{Type} of element it contains, and
 also its rank (which defaults to 1). Internally, \code{Array}s are implemented
 as a pair of a linearly contiguous data store as well as a shape tuple, which
@@ -327,23 +360,23 @@ implementing \code{Set\{T\}} using a \code{Dict\{T,Nothing\}} to avoid paying
 any cost for the value array in the \code{Dict}.
 
 %TODO identify subthemes in this giant block
-The implementation of Julia \code{Array}s differs significantly from other
+The implementation of \Julia{} \code{Array}s differs significantly from other
 languages in several important respects. First, automatic type inference is
 not used merely as a compiler optimization technique, like in static compilers
 for dynamic languages, but instead is a crucial language feature that, in
 conjunction with multiple dispatch, are necessary for implement language
-semantics. Second, Julia by virtue of being a dynamic language provides the
+semantics. Second, \Julia{} by virtue of being a dynamic language provides the
 static analyses enabled by type inference and multiple dispatch at runtime. In
 contrast, the C++ expression templates are static semantics that are
 unavailable at runtime, and the semantics of templates are for the purposes of
-runtime programs effectively a separate language. The single all- runtime
-model of Julia is much easier to use and imposes fewer restrictions on the
-kind of Julia code that can be written. You can implement a bigger class of
-rules in Julia rather than having to special case on the number of dimensions
+runtime programs effectively a separate language. The single all-runtime
+model of \Julia{} is much easier to use and imposes fewer restrictions on the
+kind of \Julia{} code that can be written. You can implement a bigger class of
+rules in \Julia{} rather than having to special case on the number of dimensions
 or be forced to rely on recursive definitions onto subarrays. For example in
-Julia you can do \code{A[I...]} where \code{I} is a heterogeneous array, and
+\Julia{} you can do \code{A[I...]} where \code{I} is a heterogeneous array, and
 all the same definitions are still applicable, but you might take a bit of
-performance drop. Third, Julia aggressive employs specialization on argument
+performance drop. Third, \Julia{} aggressively employs specialization on argument
 types by default, generating a large variety of specialized methods for each
 generic function, in contrast with the default of one compilation per function
 declaration in most other languages. This is possible thanks to the static
@@ -353,7 +386,7 @@ requested explicitly using templates. Furthermore, having all the semantics
 enabled by static analysis at runtime allows for composition for code that
 results in efficient specialized methods by the compiler. For example, Julia
 code implementing the algebra of the quaternion field can be composed
-transparently with other Julia code implementing Gaussian elimination by the
+transparently with other \Julia{} code implementing Gaussian elimination by the
 compiler. One can be inlined into the other and woven into a specialized
 method for Gaussian elimination on quaternionic matrices. Contrast this with
 the conventional wisdom that user-defined types are slow in languages like
@@ -361,7 +394,7 @@ the conventional wisdom that user-defined types are slow in languages like
 value types, and methods have to be declared \code{virtual} to enable dynamic
 dispatch as opposed to the default static dispatch mechanism. In Julia,
 everything in principle has to happen dynamically but then the focus is on
-analyzing it statically. Fourth, array functions in Julia have access to the
+analyzing it statically. Fourth, array functions in \Julia{} have access to the
 entire argument list, allowing for conceptual models and APIs that are not
 restricted to strict left-to-right or right-to-left index traversal that would
 be necessary by recursive peeling. Fifth, specialization of methods can be
@@ -369,12 +402,12 @@ implemented with multiple dispatch, which is a powerful alternative to the
 single dispatch mechanism of Haskell based on function classes and pattern
 matching.
 
-In the cases where static analysis can happen, Julia can perform as fast as
+In the cases where static analysis can happen, \Julia{} can perform as fast as
 languages where array semantics is predicated on static analysis, but multiple
-dispatch allows Julia to be more flexible than just this. Julia also allows
+dispatch allows \Julia{} to be more flexible than just this. \Julia{} also allows
 for generic fall-back methods that are slower because of a lack of static
 analysis, but nonetheless can be dispatched upon. The flexibility that is
-allowed by this approach is a very nonobvious application of multiple
+allowed by this approach is a very non-obvious application of multiple
 dispatch.
 
 \subsection{Array indexing rules}
@@ -408,7 +441,7 @@ don't want to drop or rearrange dimensions very often.
 
 In practice we may all have to reach a consensus on what rules to use, but it
 should not be enforced upon uses by pure technical implementation convenience.
-The point is that in Julia, these are not enforced a priori. Sometimes the
+The point is that in Julia, these are not enforced \textit{a priori}. Sometimes the
 distinctions between the various indexing rules are semantically meaningful
 and that's when this flexibility becomes particularly valuable. For example
 Tim Holy's image 4-arrays. Quantum mechanics when you average out multiple
@@ -528,7 +561,7 @@ diverge() = randbool() ? () : tuple(1, diverge()...)
 This is an example of indexing behavior that is not amenable to useful static
 analysis, since each branch of \code{diverge()} has different types.
 
-%TODO say something about how types of tuples in Julia are defined.
+%TODO say something about how types of tuples in \Julia{} are defined.
 
 Such code would throw a type error in languages requiring statically
 checkableness such as Haskell. But in Julia, this is still allowed just that
@@ -550,7 +583,7 @@ not crucial.
 \section{Extensions of the idea}
 
 Multiple dispatch can also be used in other contexts. For example, the
-implementation of unitful computations in Julia using the
+implementation of unitful computations in \Julia{} using the
 \code{SIUnits.jl}\cite{Fischer:2014si} package makes use of the same kind of
 tradeoffs as for array semantics. Unitful computations are a space of
 computations where most of the time, exponents on units can often be known at
@@ -563,7 +596,7 @@ language that allows for general computations.
 A well-designed language force programmers to write code in ways that are
 amenable to static analysis. Technically speaking you can say that the
 inability to do static analysis is a weakness of compiler implementation, but
-this is also a point about the ``power'' of a language. Compare Julia to the
+this is also a point about the ``power'' of a language. Compare \Julia{} to the
 past: language abstraction mechanisms were not powerful enough to define
 $n$-arrays. The behaviors had to be built in to the compiler (or inside a very
 elaborate C library like NumPy). In Julia, method signatures plus a general-
@@ -588,22 +621,22 @@ and reduced redundancy in code. At the same time, types in dispatch signatures
 give you access to behavior specialization through multiple dispatch, thus
 enabling better performance.
 
-In contrast with statically typed languages like Haskell, Julia by virtue of
+In contrast with statically typed languages like Haskell, \Julia{} by virtue of
 being a dynamic language can take a more liberal view on type correctness.
-While Julia makes every attempt to infer type information from static
-analysis, Julia does not create any issues over type correctness, but rather
+While \Julia{} makes every attempt to infer type information from static
+analysis, \Julia{} does not create any issues over type correctness, but rather
 execute code anyway in the absence of detailed type information. Contrast this
 with the behavior of C++, which is a static language with separate static and
 dynamic semantics. C++ resolves function overloads at compile time; this isn't
 something you can do at runtime.
 
 Automatic type inference allows for a lot of static analysis without a static
-type system. Julia says we do a lot statically without a static type system.
+type system. \Julia{} says we do a lot statically without a static type system.
 The design idea is that languages with static types assert that the latter are
 necessary for correctness. But it is also possible that with static analysis
 that the code can be more performant due to specialization.
 
-Julia is sufficiently expressive such that you can write code that in general
+\Julia{} is sufficiently expressive such that you can write code that in general
 may not be amenable to static analysis, but in many cases the compiler is able
 to analyze it so that you are in the fast (and statically analyzable)
 quadrant. Making it EASIER to move into this quadrant, part of this is because
@@ -631,7 +664,7 @@ trade-off.
 
 The authors gratefully acknowledge the enthusiastic participation of the Julia
 developer community for many stimulating discussions on the topic of array
-implementations in the Julia language.
+implementations in the \Julia{} language.
 
 %TODO thank Intel, Wade, and perhaps NSF Solar here
 
