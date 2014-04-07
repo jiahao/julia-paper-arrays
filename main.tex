@@ -40,15 +40,15 @@
 \preprintfooter{Array Operators Using Multiple Dispatch} % 'preprint' option specified.
 
 % \title{Array implementations in Julia}
-% \subtitle{Implementing arrays in a way that is amenable to compiler analysis}
 
 %\title{Array Operators Using Multiple Dispatch}
 %\subt
-\title{ A design methodology for array implementations in dynamic languages }
+\title{ Array Operators Using Multiple Dispatch }
+\subtitle{A design methodology for array implementations in dynamic languages}
 
-\authorinfo{Jeff Bezanson \and Jiahao Chen \and Keno Fischer \and Stefan Karpinski \and Viral Shah  \and Alan Edelman}
+\authorinfo{Jeff Bezanson \and Jiahao Chen \and Stefan Karpinski \and Viral Shah  \and Alan Edelman}
            {MIT Computer Science and Artificial Intelligence Laboratory}
-  { bezanson@csail.mit.edu, jiahao@mit.edu, kfischer@college.harvard.edu, stefan@karpinski.org, viral@mayin.org, edelman@mit.edu }
+  { bezanson@mit.edu, jiahao@mit.edu, stefan@karpinski.org, viral@mayin.org, edelman@mit.edu }
 
 %TODO Get Dahua to sign on as coauthor
 %\authorinfo{Dahua Lin}
@@ -59,29 +59,35 @@
 
 \begin{abstract}
 
-Arrays, the most basic of data structures, tends to be built in to a language early
-either in the compiler or a large low-level library. 
-More recent developments
-beg for more flexibility and generality, as
-modern array programming systems are typically integrated with object-oriented
-languages.  A consequence of the traditional approach is that the array data type is difficult to
-modify or extend, and is even unnecessarily more difficult to implement.
+Arrays, as an unusually rich and fundamental data type, tend to be built in to a language
+either in the compiler or in a large low-level library. 
+Only a few languages, such as C++ and Haskell, provide the necessary power to define
+n-dimensional arrays, but these systems rely on compile-time abstraction to provide
+performance, sacrificing some amount of flexibility.
+In contrast, dynamic languages make it straightforward for the user to define any
+behavior they might want, but at the possible expense of performance.
 
-% ??  [The below delays the good point]
-%Arguably, efficient
-%and flexible n-d arrays are one of the more difficult datatypes to implement
-% at the library level.
+As part of the Julia language project, we have developed an approach that yields
+a novel trade-off between flexibility and compile-time analysis. The core
+abstraction we use is multiple dispatch. This has been extensively studied
+as a general object-oriented programming technique, but we find it
+especially relevant to technical and array-based programming. By expressing
+key functions such as array indexing using multi-method
+signatures, a surprising range of behaviors can be obtained, in a way that is
+both relatively easy to write and amenable to compiler analysis.
+The compact factoring of concerns provided by these methods makes it easier
+for user-defined types to behave consistently with types in the standard
+library.
 
-In this work, we present a new approach, developed as part of 
-the Julia language project, where the object system is used to define the behaviors
-of  \framebox{  {\bf key array operators} } \marginpar{Which operators?  Which functionality?  reshape? indexing? others? too vague}  --- not just to organize the 
-\framebox{  {\bf functionality} } into
-classes.
-The combination of flexible multi-method
-signatures and dataflow type inference yields a novel trade-off between
-flexibility and compiler analysis.
 
-\framebox{The words ``multiple dispatch'', should appear in the abstract?}
+%pulls out abstractions that might not have been named before
+%creates better integration of user-defined types
+%flexible enough to change the behavior if you want
+%creates more coherence
+
+%Interest in recovering performance in these systems has spurred development of
+%analysis frameworks. 
+
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -537,7 +543,11 @@ not run as fast. In Repa, the top priority is to appease the type system of
 Haskell, with performance and user interface secondary. We think it should be
 the other way round.
 
-\section{Array views (Dahua's stuff)}
+\section{Extensions of the idea}
+
+Multiple dispatch can also be used in other contexts.
+
+\subsection{Array views (Dahua's stuff)}
 
 Also interesting are array views. In certain cases of subarray slicing, it is
 possible to keep the data in place and return just a view (pointer) to the
@@ -547,16 +557,19 @@ Views are just another thing that implement the array protocol: (length, size,
 getindex). Is there a point here about code reuse? Maybe but Jeff thinks it's
 not crucial.
 
-\section{Extensions of the idea}
+\subsection{Distributed Arrays}
 
-Multiple dispatch can also be used in other contexts. For example, the
-implementation of unitful computations in Julia using the
+\subsection{Quantities with Units}
+
+The implementation of unitful computations in Julia using the
 \code{SIUnits.jl}\cite{Fischer:2014si} package makes use of the same kind of
-tradeoffs as for array semantics. Unitful computations are a space of
-computations where most of the time, exponents on units can often be known at
-compile time and hence can be dispatched upon thanks to Julia's type system,
-but nevertheless affords users general-level expressibility within a single
-language that allows for general computations.
+tradeoffs as for array semantics. Unitful computations are another case
+where the relevent metadata (exponents on units) can be
+known at compile time in many cases, but not always. Therefore the
+\code{SIUnits} library is free to express the general case, and have the
+overhead of tagging and dispatching removed where possible.
+
+
 
 \section{Conclusions}
 
