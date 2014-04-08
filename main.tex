@@ -450,6 +450,75 @@ is a new compromise that provides a net-better solution.
 
 %TODO more
 
+\section{Multiple dispatch}
+
+Multiple dispatch (also known as generic functions, or multi-methods) is an
+object-oriented paradigm where methods are defined on combinations of data
+types (classes), instead of encapsulating methods inside classes. Methods are
+grouped into generic functions. A generic function can be applied to several
+arguments, and the method with the most specific signature matching the
+arguments is invoked.
+
+One can invent examples where multiple dispatch is useful in classic OO domains
+such as GUI programming. We might define a method for drawing a label onto
+a button as follows (in Julia syntax):
+
+\begin{verbatim}
+function draw(target::Button, obj::Label)
+    ...
+end
+\end{verbatim}
+
+In a numerical setting, binary operators are common and we can easily imagine
+needing to define special behavior for some combination of two arguments:
+
+\begin{verbatim}
++(x::Real, z::Complex) = complex(x+real(z), imag(z))
+\end{verbatim}
+
+But how much more is there? Would we ever need to define a method on
+\emph{three} different types at once? Indeed, most language designers and
+programmers seem to have concluded that multiple dispatch might be nice, but is
+not essential, and the feature is not often used.
+%TODO: cite statistic from study of multiple dispatch showing it is lightly used
+Perhaps the few cases that seem to need it can be handled using tricks like
+Python's \code{\_\_add\_\_} and \code{\_\_radd\_\_} methods.
+
+However, we have come to believe that while multiple dispatch might not
+have much impact in other kinds of programming, technical computing is its
+killer application. To a large extent, technical computing is characterized
+by the prevalence of highly polymorphic, multi-argument operators. Many of
+these can be effectively expressed using a multiple dispatch system that also
+supports variadic functions.
+
+This combination of features seems straightforward
+enough, and yet it permits surprisingly powerful definitions. For example,
+consider a variadic \code{sum} function that adds up its arguments. We could
+write the following two methods for it (note that in Julia, \code{Real} is
+the abstract supertype of all real number types, and \code{Integer} is the
+abstract supertype of all integer types):
+
+\begin{verbatim}
+sum(xs::Integer...)
+
+sum(xs::Real...)
+\end{verbatim}
+
+In the first case, all arguments are integers and so we can use a naive
+summation algorithm. In the second case, we know that at least one argument
+is not an integer, so we might want to use some form of compensated
+summation instead. Notice that these modest method signatures
+capture a subtle property (at least one argument is non-integer)
+\emph{declaratively}: there is no need to explicitly loop over the arguments
+to examine their types. The signatures also provide useful type information:
+at the very least, a compiler could know that all argument values inside
+the first method are of type \code{Integer}. Yet the type annotations
+are not redundant: they are necessary to specify the desired behavior. There
+is also no loss of flexibility: \code{sum} can be called with any combination
+of number types, as users of dynamic technical computing languages would expect.
+
+
+
 \subsection{\texttt{index\_shape}}
 
 Below we define a function \texttt{index\_shape} that computes the shape of a
