@@ -59,8 +59,9 @@
 
 \begin{abstract}
 
-Arrays, as an unusually rich and fundamental data type, tend to be built in to a language
-either in the compiler or in a large low-level library. 
+Arrays are such a rich and fundamental data type that they tend to be built in to
+a language, either in the compiler or in a large low-level library.
+% TODO: a sentence about why this is not good and why we need more flexibility
 Only a few languages, such as C++ and Haskell, provide the necessary power to define
 n-dimensional arrays, but these systems rely on compile-time abstraction to provide
 performance, sacrificing some amount of flexibility.
@@ -148,24 +149,22 @@ implementations for each rank $n$ can be written out in full. The
 disadvantage, of course, is that program expressibility is limited and it is
 challenging to write libraries for general $n$-arrays in these languages.
 
-Most other static languages, however, allow for greater flexibility while
+Some static languages, however, have more flexibility while
 still restricting programs to be amenable to static analysis. A notable
-language in this category is C++, whose expression templates are sufficiently
-powerful to allow the implementation of $n$-arrays in fast, performant
+example is C++, where templates allow the implementation of $n$-arrays in performant
 libraries, like \code{Blitz++} \cite{Veldhuizen:1998ab} or
 \code{Boost.MultiArray} \cite{Garcia:2005ma}.  Nevertheless, template
-metaprograms are nonetheless notoriously difficult to implement and
+metaprograms are notoriously difficult to implement and
 comprehend. While $n$-arrays can be implemented compactly using recursive
-template metaprograms \cite{Bavestrelli:2000ct}, peeling off $(n-1)$-arrays
+templates \cite{Bavestrelli:2000ct}, peeling off $(n-1)$-arrays
 recursively from $n$-arrays, production quality libraries avoid explicit
 recurrences, implementing instead a great many special-cased implementations
 of $n$-arrays to ensure that C++ compilers unroll loops fully to achieve
 maximal performance \cite{Garcia:2005ma}. The recursive peeling design also
 restricts indexing semantics in C++ arrays to traverse only from  leftmost to
-rightmost index. Furthermore, C++ expression templates implemented
-intrinsically using static (compile-time) semantics which are not accessible
-dynamically (at runtime); C++ programs therefore cannot make use of arrays
-whose ranks are known only at runtime. . Also you have handle dimensions one
+rightmost index. Furthermore, the behavior of templates is not available at
+runtime; C++ programs cannot use arrays
+whose ranks are known only at runtime. Also you have handle dimensions one
 at a time.
 
 Another notable static language that supports $n$-arrays is Haskell, and in
@@ -195,7 +194,7 @@ but has the cost of introducing repetition in the code
 \subsection{Languages favoring dynamic generality}
 
 Conversely, some applications may call for semantics that are not amenable to
-static analysis. For example, one can envision applications requiring dynamic
+static analysis. For example, one can envision applications requiring
 arrays whose ranks are known only at runtime. Languages that wish to support
 such applications of some applications cannot choose only to use data
 structures that fit in a constant amount of memory. Another possibility is
@@ -225,6 +224,9 @@ using nested lists of expressions \cite{mathematica:nl, mathematica:int}, with
 the \code{[[]]} (\code{Part}) operator playing the role of array indexing.
 However, \Mathematica's powerful pattern matching semantics are prone to
 abstraction leakage. For example, it is possible to ``index'' an array with
+% Jeff says: This is an interesting example of excessive permissiveness,
+% but it sounds like a strawman since most dynamic languages have data
+% abstraction that works well enough.
 more indices than its rank; the extra indices would simply traverse into the
 expression contained within the matrix element. For example, \code{Array[f,
 {3, 4}][[3, 2]]} returns \code{f[3,2]}, whilst \code{Array[f, {3, 4}][[3, 2,
@@ -271,21 +273,20 @@ good case in point. NumPy arrays are Python objects, but instead of using the
 native Python object system's semantic mechanisms, NumPy instead has its own
 abstraction mechanisms implemented with a large C code base for compile-time
 code generation and custom runtime dispatch mechanisms. The resulting Python
-objects are little more than lookup tables of behaviors, primarily centered
-around indexing behavior, and in particular indexing of a single index. In
+objects are little more than lookup tables of behaviors. In
 other languages like R, the disjunction occurs because the array and object
 subsystems were added the language at different points in time.
 
 %TODO other languages: R, APL, ZPL, Lisp?
 
-To summarize, the flexibility of languages in this category can lead to faulty
-array abstractions and slow performance. To address performance issues,
-language implementations must either reimplement large components of compiler
-infrastructure in order to perform static analyses like type inference, or
-resort to implementing key components of array infrastructure in external
-libraries written in a static language like C or Fortran to achieve acceptable
-performance, with the result that the first language becomes little more than
-a superficial wrapper.
+%% To summarize, the flexibility of languages in this category can lead to faulty
+%% array abstractions and slow performance. To address performance issues,
+%% language implementations must either reimplement large components of compiler
+%% infrastructure in order to perform static analyses like type inference, or
+%% resort to implementing key components of array infrastructure in external
+%% libraries written in a static language like C or Fortran to achieve acceptable
+%% performance, with the result that the first language becomes little more than
+%% a superficial wrapper.
 
 \subsection{The performance---flexibility trade-off}
 
@@ -301,10 +302,13 @@ implementing arrays in an external library written in a static language. Thus
 we see that having some modicum of static analysis is unavoidable for
 reasonable performance.
 
-We propose in this paper that multiple dispatch is not just a particularly
-useful kind of static analysis, but instead can be fully leveraged to
-implement general array semantics within a single language that nevertheless
-allows for reasonable performance in most use cases.
+A key problem with dynamic languages is how to provide more declarative
+information to a compiler. Users expect to be able to program any
+run-time behavior and have it just work. In theory, a compiler could
+partially evaluate programs based on whatever static information it can
+find (e.g. integer constants), but it is unlikely that this would reliably
+provide performance where it is needed.
+
 
 %TODO A static # of dimensions is probably sufficient for most applications,
 %but there is a large cliff where everything changes if your code is more
@@ -313,24 +317,24 @@ allows for reasonable performance in most use cases.
 \section{Julia Arrays}
 
 Arrays are implemented in Julia\cite{Bezanson:2012jf} as the \code{Array}
-data type, which is parametric on the \code{Type} of element it contains, and
-also its rank (which defaults to 1). Internally, \code{Array}s are implemented
-as a pair of a linearly contiguous data store as well as a shape tuple, which
-is sufficiently flexible to define the semantics of arrays in a way that is
-flexible enough to incorporate a wide range of nontrivial design decisions.
+data type, which is parameterized by an element type and a rank (an integer).
+For purposes of this paper, an \code{Array} can be considered a tuple of
+a contiguous memory region and a shape (a tuple of integers giving the size
+of the array in each dimension). This simple representation is already
+enough to require nontrivial design decisions.
 
-Multiple dispatch makes it possible for \code{Array}s to have implementations
-that afford both generality and efficiency. The most general
-\code{Array\{Any\}} is an array of pointers to heap-allocated values. However,
-\code{Array}s of native machine types like double precision floating point
-numbers (\code{Float64}s) or integers of native machine size (\code{Int}s) can
-be implemented to be C/Fortran- compatible. Interestingly,
-\code{Array\{Nothing\}} can be implemented with zero storage space at runtime,
-since it consists of elements of an immutable type with zero fields, which is
-possible because only a single instance of any such type can exist, and hence
-need not actually be stored. This allows for some clever tricks like
-implementing \code{Set\{T\}} using a \code{Dict\{T,Nothing\}} to avoid paying
-any cost for the value array in the \code{Dict}.
+%% Multiple dispatch makes it possible for \code{Array}s to have implementations
+%% that afford both generality and efficiency. The most general
+%% \code{Array\{Any\}} is an array of pointers to heap-allocated values. However,
+%% \code{Array}s of native machine types like double precision floating point
+%% numbers (\code{Float64}s) or integers of native machine size (\code{Int}s) can
+%% be implemented to be C/Fortran- compatible. Interestingly,
+%% \code{Array\{Nothing\}} can be implemented with zero storage space at runtime,
+%% since it consists of elements of an immutable type with zero fields, which is
+%% possible because only a single instance of any such type can exist, and hence
+%% need not actually be stored. This allows for some clever tricks like
+%% implementing \code{Set\{T\}} using a \code{Dict\{T,Nothing\}} to avoid paying
+%% any cost for the value array in the \code{Dict}.
 
 %TODO identify subthemes in this giant block
 The implementation of Julia \code{Array}s differs significantly from other
@@ -412,8 +416,8 @@ In fact different domains want different things. E.g. in images, each
 dimension might be quite different, e.g. time vs. space vs. color, so you
 don't want to drop or rearrange dimensions very often.
 
-In practice we may all have to reach a consensus on what rules to use, but it
-should not be enforced upon uses by pure technical implementation convenience.
+In practice we may have to reach a consensus on what rules to use, but this
+should not be forced by pure implementation convenience.
 The point is that in Julia, these are not enforced a priori. Sometimes the
 distinctions between the various indexing rules are semantically meaningful
 and that's when this flexibility becomes particularly valuable. For example
@@ -422,22 +426,13 @@ indistinguishable particles. $n$-point correlations functions where which $k$
 indices you average out defines any number of lower-point $n-k$ point
 correlation functions.
 
-\subsection{Assumptions}
-Julia's hard assumptions are:
-
-\begin{enumerate}
-\item Array code can not be manually implemented inside the compiler
-\item The compiler must be able to reasonably understand array programs
-\item Code must be reasonably easy to write
-\end{enumerate}
-
-Instead of the compiler analyzing indexing expressions and determining an
-answer using hard-coded logic, we would rather implement the behavior in
-libraries, so that different kinds of arrays may be defined, or so that rules
-of similar complexity may be defined for other kinds of objects. But these
-kinds of rules are unusually difficult to implement in libraries. If a library
-writes out its indexing logic using imperative code, the host language
-compiler is not likely to be able to analyze it.
+%% Instead of the compiler analyzing indexing expressions and determining an
+%% answer using hard-coded logic, we would rather implement the behavior in
+%% libraries, so that different kinds of arrays may be defined, or so that rules
+%% of similar complexity may be defined for other kinds of objects. But these
+%% kinds of rules are unusually difficult to implement in libraries. If a library
+%% writes out its indexing logic using imperative code, the host language
+%% compiler is not likely to be able to analyze it.
 
 Why is it important to be able to express this in a library? No hidden
 theories, some sort of consistency. Another reason is heuristic, don't really
