@@ -107,93 +107,53 @@ designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
 
-%BEGIN OUTLINE
+$n$-arrays (arrays of rank $n$, or simply `arrays') are an essential data
+structure for technical computing, but are challenging to implement
+efficiently \cite{Sattley:1960as,Sattley:1961as, Randell:1964a6}. There is a
+long history of special-purpose compiler optimizations to make operations
+over arrays efficient \cite{Randell:1964a6, Busam:1969oe}. Many
+implementations of programming languages therefore choose to build array
+semantics into compilers.
 
-%Introduction to multiple dispatch: traditionally it is considered an optimization
+Of the languages that offer $n$-arrays, only a few have sufficient power to
+express the semantics of $n$-arrays for general $n$ in the same language,
+i.e. without resorting to hard coding array behavior into a compiler written
+in a different language. Library writers can in fact implement array data
+types in such languages with sufficient expressive power. Notable examples 
+include the C++ libraries \code{Blitz++} \cite{Veldhuizen:1998ab} or
+\code{Boost.MultiArray} \cite{Garcia:2005ma}, and the Haskell Repa (Regular
+Parallel Arrays) library \cite{Keller:2010rs,Lippmeier:2011ep,
+Lippmeier:2012gp}.
 
-%Julia philosophy: Instead of MD as a hack, turn it around and make it a core feature of the language.
+These libraries are powerful. You can do general rank $n$ and through the magic of static analysis and induction, the recursive definition of $n$-arrays as the outer product
+of a 1-array with an $(n-1)$-array leads naturally to a general implementation of $n$-arrays \cite{Bavestrelli:2000ct}. The dispatch semantics also allow for some neat tricks. For example, Repa allows for dispatch on the index-to-offset mapping function \cite{Keller:2010rs}, allowing for efficient matrix transpositions simply by changing the
+\code{Shape} class to redefine the memory striding rules \cite{Keller:2010rs}. Using static analysis means that you can have zero runtime overhead and thus have performance.
 
-%In this paper we show how to use MD to implement semantic features.
-
-A particularly interesting use case is $n$-arrays (arrays of rank $n$, or
-simply `array'). While 1-arrays are an essential data type in many programming
-languages, multidimensional arrays in their full generality are significantly
-more challenging to implement efficiently \cite{Sattley:1960as,
-Sattley:1961as, Randell:1964a6}. For example, programs that traverse arrays
-require many indexing computations, and for these programs to perform
-efficiently, there is a strong incentive for programming languages to
-implement static analysis such as constant subexpression elimination and loop
-fusion/reordering of array traversals \cite{Busam:1969oe}.
-
-Using arrays an example, we can classify languages into those favoring
-static analysis and those favoring full dynamic generality.
-
-%TODO make a nice figure out of this idea
-%      | Statically knowable   | Not ~ but general
-% -----+-----------------------+-------------------------
-% fast | Haskell, C++, Fortran | (Unattainable perfection)
-% slow | (Undesirable)         | Matlab, APL, Python/NumPy**
-%
-%** Everything in this category doesn't really have the flexibility to write general libraries
-%   _within the same language_, so for performance you have to use a static language.
-%   heroic compilers under the hood are static again.
-
-\subsection{Languages favoring static analysis}
-
-Static languages like Fortran, C/C++ and Haskell fall naturally into this
-category. In extreme cases, some static languages only support $n$-arrays up
-to some fixed maximal rank, like Fortran.\footnote{The maximal rank was 3 in
-FORTRAN I \cite{Backus:1957fa}, increased to 7 in Fortran 77, and later to 15
-in Fortran 2008.} The advantage of imposing rank limits is that specialized
-implementations for each rank $n$ can be written out in full. The
-disadvantage, of course, is that program expressibility is limited and it is
-challenging to write libraries for general $n$-arrays in these languages.
-
-Some static languages, however, have more flexibility while
-still restricting programs to be amenable to static analysis. A notable
-example is C++, where templates allow the implementation of $n$-arrays in performant
-libraries, like \code{Blitz++} \cite{Veldhuizen:1998ab} or
-\code{Boost.MultiArray} \cite{Garcia:2005ma}.  Nevertheless, template
-metaprograms are notoriously difficult to implement and
-comprehend. While $n$-arrays can be implemented compactly using recursive
-templates \cite{Bavestrelli:2000ct}, peeling off $(n-1)$-arrays
-recursively from $n$-arrays, production quality libraries avoid explicit
-recurrences, implementing instead a great many special-cased implementations
-of $n$-arrays to ensure that C++ compilers unroll loops fully to achieve
-maximal performance \cite{Garcia:2005ma}. The recursive peeling design also
-restricts indexing semantics in C++ arrays to traverse only from  leftmost to
-rightmost index. Furthermore, the behavior of templates is not available at
-runtime; C++ programs cannot use arrays
-whose ranks are known only at runtime. Also you have handle dimensions one
-at a time.
-
-Another notable static language that supports $n$-arrays is Haskell, and in
-particular its Repa (Regular Parallel Arrays) library \cite{Keller:2010rs}.
-One key abstraction is the \code{Shape} class, which enables dispatch on the
-index-to-offset mapping function \cite{Keller:2010rs}. This allows for in-
-memory representations of transposed arrays, simply by changing the
-\code{Shape} class to redefine the memory striding rules \cite{Keller:2010rs}.
-Nevertheless, Repa employs the same recursive peeling semantics of C++ array
-libraries: for example, reductions like \code{Sum} are only defined
-over the last index \cite{Keller:2010rs}. In principle, a generalized
-\code{Sum} over an arbitrary index can be composed as \code{Sum} with pre- and
-post-permutations to swap the desired index with the last index. However,
-this is semantically more work and furthermore isn't guaranteed to produce a
-good memory traversal pattern. Similarly, operations over more than one
-dimension are implemented recursively over the dimensions, which means that
-the compiler has to make the difficult decision whether or not to unroll the
-recursion \cite{Lippmeier:2011ep}. Manual unrolling is of course a possibility
-but has the cost of introducing repetition in the code
+These libraries are powerful, but nevertheless still have some limitations.
+First, the language semantics required to achieve the necessary flexibility of
+expression and performance, such as C++ expression templates, are only
+available at compile time. These libraries would not be able to support
+programs using $n$-arrays where $n$ is known only at runtime. C++ template
+metaprograms, in particular, are also notoriously difficult to implement and
+comprehend. Second, implementations of $n$-arrays tend to employ a recursive
+peeling semantic where $n$-arrays are essentially defined as the outer product
+of a 1-array with an $(n-1)$-array, for example the recursive template
+implementation of \cite{Bavestrelli:2000ct}. The recursive peeling design also
+restricts the naturability of indexing semantics to traverse indices in only
+direction, e.g. from leftmost to rightmost. For example, \code{Repa}'s
+reductions like \code{Sum} are only defined naturally over the last index
+\cite{Keller:2010rs}; traversals over other indices involve some permutations
+of the indices which require more code to express, and are furthermore not
+guaranteed to produce an optimal memory traversal pattern.  As a consequence
+of the recursive peeling design, to improve performance, production quality
+libraries contain implementations that tend to avoid explicit recurrences, but
+this necessitates a great many special-cased implementations of $n$-arrays to
+ensure that the compiler is able to fully exploit its static analyses such as
+loop unrolling to achieve maximal performance \cite{Garcia:2005ma,
+Lippmeier:2011ep}. This also introduces a lot of repetition in the code
 \cite{Lippmeier:2012gp}.
 
-%Arguably, a purely functional language like Haskell, which disallows
-%imperative constructs like loops, forces programmers to identify
-%abstractions. With fewer options to implement semantics, semantics is more
-%intimately tied to types.
-
-\subsection{Languages favoring dynamic generality}
-
-Conversely, some applications may call for semantics that are not amenable to
+These libraries use static analysis and static semantics extensively. There are some applications, however, call for semantics that are not amenable to
 static analysis. For example, one can envision applications requiring
 arrays whose ranks are known only at runtime. Languages that wish to support
 such applications of some applications cannot choose only to use data
@@ -215,9 +175,7 @@ semantics for different ranks at runtime, runtime flexibility is also essential.
 
 These use cases favor dynamic languages which support full runtime
 flexibility in arrays, such as \Mathematica{}, \MATLAB{} and Python/NumPy,
-and accept that most or all operations will be dynamically dispatched.
-
-However, languages in this category are not without their pitfalls. First,
+and accept that most or all operations will be dynamically dispatched.However, languages in this category are not without their pitfalls. First,
 array semantics may be implemented using flexible data structure that may
 cause abstraction leakage. For example, \Mathematica{} implements $n$-arrays
 using nested lists of expressions \cite{mathematica:nl, mathematica:int}, with
@@ -313,6 +271,8 @@ provide performance where it is needed.
 %TODO A static # of dimensions is probably sufficient for most applications,
 %but there is a large cliff where everything changes if your code is more
 %dynamic
+
+%The user should not have to learn two different sets of semantic behavior. In Julia, that's the compiler's job. It does mean that the it's not as fast as a static language.
 
 \section{Julia Arrays}
 
