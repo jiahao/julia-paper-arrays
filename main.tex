@@ -542,66 +542,25 @@ overhead of tagging and dispatching removed where possible.
 
 \section{Conclusions}
 
-A well-designed language force programmers to write code in ways that are
-amenable to static analysis. Technically speaking you can say that the
-inability to do static analysis is a weakness of compiler implementation, but
-this is also a point about the ``power'' of a language. Compare Julia to the
-past: language abstraction mechanisms were not powerful enough to define
-$n$-arrays. The behaviors had to be built in to the compiler (or inside a very
-elaborate C library like NumPy). In Julia, method signatures plus a general-
-purpose (not array-specific) type inference algorithm can do it. The
-combination turns out to be very important: if you only have multiple
-dispatch, you just have a nifty-but-slow way to write these things. If you
-just have type inference, then you are quite limited in what you can
-realistically infer --- for example an explicit loop over the arguments to
-\code{getindex} is too dynamic, and you can't really infer what it does.
+Well-designed programming languages compromise between the ability to perform
+static analyses and allowing maximal flexbility of user programs. Performance-
+critical language features like arrays benefit greatly from static analyses,
+and so even dynamic languages that lack static analyses want them one way ot
+the other, either by implementing features into the compiler, or in elaborate
+external libraries.
 
-Languages have to compromise between static (compiler) analysis - accept more
-restrictions so that you can do more static analyses - vs user ease of writing
-programs. Other dynamic languages lack extensive static analysis capabilities
-in their default implementations. Implementations with some modicum of static
-analysis can result in large performance gains, like FALCON or Hack. But in
-Julia, we are going one step further and turning the combination of multiple
-dispatch and automatic type inference from a performance optimization hack,
-into a genuine feature of the programming language, and designing a
-programming language to fully leverage the power of this combination.
-Automatic type inference reduces the need for manual, tedious type annotation
-and reduced redundancy in code. At the same time, types in dispatch signatures
-give you access to behavior specialization through multiple dispatch, thus
-enabling better performance.
-
-In contrast with statically typed languages like Haskell, Julia by virtue of
-being a dynamic language can take a more liberal view on type correctness.
-While Julia makes every attempt to infer type information from static
-analysis, Julia does not create any issues over type correctness, but rather
-execute code anyway in the absence of detailed type information. Contrast this
-with the behavior of C++, which is a static language with separate static and
-dynamic semantics. C++ resolves function overloads at compile time; this isn't
-something you can do at runtime.
-
-Automatic type inference allows for a lot of static analysis without a static
-type system. Julia says we do a lot statically without a static type system.
-The design idea is that languages with static types assert that the latter are
-necessary for correctness. But it is also possible that with static analysis
-that the code can be more performant due to specialization.
-
-Julia is sufficiently expressive such that you can write code that in general
-may not be amenable to static analysis, but in many cases the compiler is able
-to analyze it so that you are in the fast (and statically analyzable)
-quadrant. Making it EASIER to move into this quadrant, part of this is because
-it is a single language. Sufficiently expressive to write complex, generic,
-dynamic multidimensional behaviors, but sufficiently analyzable to know when
-it's in one of the cases that C++ or Haskell can express and accordingly
-generate efficient code.
-
-Multiple dispatch changes the ``statically analyzable + fast'' versus ``not
-analyzable + slow'' trade-off from a property of the language to a property of
-a program written in that language. It is a remarkably efficient way to enable
-the expressiveness ability to write dynamic code that can nonetheless be
-analyzed statically in sufficiently many cases to attain performance. Multiple
-dispatch is not just an optimization hack, but can be used in an unprecedented
-way to address the performance---flexibility compromise that we believe
-achieves greater Pareto optimality than other existing solutions to this
+We believe that the combination of automatic type inference and multiple
+dispatch is not merely an optimization hack, but instead can be used to design
+a programming language where they become core semantic features. The
+implementation of these features in Julia is a remarkably efficient way to
+allow code to be specialized to leverage static analyses for performance, yet
+at the same time allows for other code written for maximal flexibility even in
+the absence of detailed type information. Static analyzability becomes no
+longer a property of an entire language, but instead an optional property of
+specific programs in a particular language. Julia is therefore sufficiently
+expressive to write complex, generic, dynamic multidimensional behaviors, and
+more generally allows us to address the performance---flexibility compromise
+in Julia with greater Pareto optimality than other existing solutions to this
 trade-off.
 
 %\appendix
