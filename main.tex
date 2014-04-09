@@ -97,8 +97,6 @@ library.
 Julia, multiple dispatch, type inference, array indexing, static analysis,
 dynamic dispatch
 
-\section{Introduction}
-
 \begin{quotation}
 ``Unfortunately, it is very difficult for a designer to select in advance all
 the abstractions which the users of his language might need. If a language is
@@ -107,103 +105,84 @@ designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
 
+\section{Static analysis is necessary for efficient array implementations}
+
 $n$-arrays (arrays of rank $n$, or simply `arrays') are an essential data
 structure for technical computing, but are challenging to implement
 efficiently \cite{Sattley:1960as,Sattley:1961as, Randell:1964a6}. There is a
-long history of special-purpose compiler optimizations to make operations
-over arrays efficient \cite{Randell:1964a6, Busam:1969oe}. Many
-implementations of programming languages therefore choose to build array
+long history of special-purpose compiler optimizations to make operations over
+arrays efficient, such as loop fusion for array traversals and common
+subexpression elimination for indexing operations \cite{Randell:1964a6,
+Busam:1969oe}. Many language implementations therefore choose to build array
 semantics into compilers.
 
-Of the languages that offer $n$-arrays, only a few have sufficient power to
-express the semantics of $n$-arrays for general $n$ in the same language,
-i.e. without resorting to hard coding array behavior into a compiler written
-in a different language. Library writers can in fact implement array data
-types in such languages with sufficient expressive power. Notable examples 
-include the C++ libraries \code{Blitz++} \cite{Veldhuizen:1998ab} or
-\code{Boost.MultiArray} \cite{Garcia:2005ma}, and the Haskell Repa (Regular
-Parallel Arrays) library \cite{Keller:2010rs,Lippmeier:2011ep,
-Lippmeier:2012gp}.
+However, only a few of the languages that support $n$-arrays have sufficient
+power to express the semantics of $n$-arrays for general rank $n$ without
+resorting to hard coding array behavior into a compiler written in a different
+language. These languages support powerful and efficient libraries
+implementing array semantics. Notable examples  include the C++ libraries
+\code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
+\cite{Garcia:2005ma}, and the Haskell Repa (Regular Parallel Arrays) library
+\cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries, at
+their core, leverage powerful static semantics of their host langangues to
+define $n$-arrays inductively as the outer product of a 1-array with an
+$(n-1)$-array \cite{Bavestrelli:2000ct}. This recursive peeling of rank thus
+defines general $n$-arrays. The dispatch semantics also allows for efficient
+implementations of certain operations; for example, \code{Repa} allows for in-
+memory transposition by dispatching on classes with different memory striding
+rules \cite{Keller:2010rs}. The use of compile-time features allows these
+libraries to eliminate runtime overhead for better performance.
 
-These libraries are powerful. You can do general rank $n$ and through the magic of static analysis and induction, the recursive definition of $n$-arrays as the outer product
-of a 1-array with an $(n-1)$-array leads naturally to a general implementation of $n$-arrays \cite{Bavestrelli:2000ct}. The dispatch semantics also allow for some neat tricks. For example, Repa allows for dispatch on the index-to-offset mapping function \cite{Keller:2010rs}, allowing for efficient matrix transpositions simply by changing the
-\code{Shape} class to redefine the memory striding rules \cite{Keller:2010rs}. Using static analysis means that you can have zero runtime overhead and thus have performance.
+Statically defined array libraries, despite their notable advantages,
+nevertheless still have some limitations. First, the language semantics
+required to achieve the necessary flexibility of expression and performance,
+such as C++ expression templates, are only available at compile time.
+Consequently, these libraries would not be able to support programs using
+$n$-arrays where $n$ is known only at runtime. Second, efficiency necessitates
+the use of notoriously abstruse language features like C++ template
+metaprograms. Third, the recursive peeling strategy for defining $n$-arrays
+naturally favors only a limited set of indexing behaviors. For example,
+\code{Repa}'s reductions like \code{Sum} are only defined naturally over the
+last index \cite{Keller:2010rs}; computations over other indices require extra
+permutation operations and are not guaranteed to produce an optimal memory
+traversal pattern. The overhead incurred by general indexing operations can be
+avoided only by implementing many special cases that ensure maximal
+exploitation of loop unrolling optimizations and other similar static analyses
+\cite{Garcia:2005ma, Lippmeier:2011ep}, which engenders much repetition in the
+codebase \cite{Lippmeier:2012gp}.
 
-These libraries are powerful, but nevertheless still have some limitations.
-First, the language semantics required to achieve the necessary flexibility of
-expression and performance, such as C++ expression templates, are only
-available at compile time. These libraries would not be able to support
-programs using $n$-arrays where $n$ is known only at runtime. C++ template
-metaprograms, in particular, are also notoriously difficult to implement and
-comprehend. Second, implementations of $n$-arrays tend to employ a recursive
-peeling semantic where $n$-arrays are essentially defined as the outer product
-of a 1-array with an $(n-1)$-array, for example the recursive template
-implementation of \cite{Bavestrelli:2000ct}. The recursive peeling design also
-restricts the naturability of indexing semantics to traverse indices in only
-direction, e.g. from leftmost to rightmost. For example, \code{Repa}'s
-reductions like \code{Sum} are only defined naturally over the last index
-\cite{Keller:2010rs}; traversals over other indices involve some permutations
-of the indices which require more code to express, and are furthermore not
-guaranteed to produce an optimal memory traversal pattern.  As a consequence
-of the recursive peeling design, to improve performance, production quality
-libraries contain implementations that tend to avoid explicit recurrences, but
-this necessitates a great many special-cased implementations of $n$-arrays to
-ensure that the compiler is able to fully exploit its static analyses such as
-loop unrolling to achieve maximal performance \cite{Garcia:2005ma,
-Lippmeier:2011ep}. This also introduces a lot of repetition in the code
-\cite{Lippmeier:2012gp}.
+More importantly, some applications call for semantics that are not amenable
+to static analysis. Certain applications require arrays whose ranks are known
+only at runtime, and thus the data structures in these program cannot be
+guaranteed to fit in a constant amount of memory. Other programs may require
+different semantics for arrays of different ranks. Some technical computing
+applications, for example, wish to treat vectors (1-arrays) differently from
+matrices (2-arrays), supporting computations such as the singular value
+decomposition for the latter but not the former. In such contexts, column
+vectors are no longer equivalent to $N\times1$ matrices or 2-arrays with a
+trailing singleton dimension, and programs that conflate them violate the
+Liskov substitution principle \cite{Liskov:1987da}, in ways are are analogous
+to the canonical circle-ellipse problem \cite{Halbert:1987ut}.
 
-These libraries use static analysis and static semantics extensively. There are some applications, however, call for semantics that are not amenable to
-static analysis. For example, one can envision applications requiring
-arrays whose ranks are known only at runtime. Languages that wish to support
-such applications of some applications cannot choose only to use data
-structures that fit in a constant amount of memory. Another possibility is
-that programs may wish to treat arrays with different numbers of dimensions
-very differently. A vector---an intrinsically one-dimensional object---can be
-conceptually very different from an $N\times1$ matrix, which is intrinsically
-two-dimensional. For example, many linear algebraic computations like the
-singular value decomposition make sense only for matrices, not vectors. These
-differences in object semantics and behavior make the number of dimensions a
-crucial part of program semantics and thus cannot be merely a compiler
-implementation detail. Even though it is possible to construct an isomorphism
-between column vectors and $N\times1$ matrices, semantic differences preclude
-a genuine ``is-a'' relationship, and hence results in a violation of the
-Liskov substitution principle \cite{Liskov:1987da}. We can think of this
-situation as the linear algebraic counterpart to the canonical circle-ellipse
-problem \cite{Halbert:1987ut}. For such applications requiring different
-semantics for different ranks at runtime, runtime flexibility is also essential.
+Applications requiring full runtime flexibility are better expressed in
+dynamic languages such as \Mathematica, \MATLAB, R, and Python/NumPy, where
+most, if not all, operations will be dynamically dispatched. Such flexibility,
+however, has traditionally come at the price of slower performance.
+Array implementations of dynamic languages striving for better performance have
+traditionally resorted to strategies that intimately involve static analyses. One strategy is to implement arrays in an external library
+written in a static language. A prominent example of this strategy is the
+Python NumPy package, which implements special static analyses and dispatch
+mechanisms within a large C code base. As a result, NumPy \code{ndarray}s are
+superficially Python objects, but implementation-wise are disjoint from the
+rest of the Python object system, since little of Python's native object
+semantics are used to define their behavior.
 
-These use cases favor dynamic languages which support full runtime
-flexibility in arrays, such as \Mathematica{}, \MATLAB{} and Python/NumPy,
-and accept that most or all operations will be dynamically dispatched.However, languages in this category are not without their pitfalls. First,
-array semantics may be implemented using flexible data structure that may
-cause abstraction leakage. For example, \Mathematica{} implements $n$-arrays
-using nested lists of expressions \cite{mathematica:nl, mathematica:int}, with
-the \code{[[]]} (\code{Part}) operator playing the role of array indexing.
-However, \Mathematica's powerful pattern matching semantics are prone to
-abstraction leakage. For example, it is possible to ``index'' an array with
-% Jeff says: This is an interesting example of excessive permissiveness,
-% but it sounds like a strawman since most dynamic languages have data
-% abstraction that works well enough.
-more indices than its rank; the extra indices would simply traverse into the
-expression contained within the matrix element. For example, \code{Array[f,
-{3, 4}][[3, 2]]} returns \code{f[3,2]}, whilst \code{Array[f, {3, 4}][[3, 2,
-1]]} returns \code{3}. Thus the semantics of the \code{Part} symbol is more
-general than pure array indexing and allows for violations of the array data
-abstraction, which may come as a surprise to users. Another example in
-\MATLAB{} comes from implementing arrays of user-defined classes. Since
-\MATLAB{} arrays are not defined in terms of its object system, special care
-must be taken for arrays of user-defined classes to have the same semantic
-behavior as arrays of built- in types. In principle, user-defined classes
-could otherwise lead to arbitrary behavior.
-
-% Jeff calls this "just overloading".
-
-Second, the flexibility of these languages results in generally slow
-performance, and language implementations wishing to attain performance must
-instead resort to advanced static analyses anyway. For example, \MATLAB's
-array semantics allow an array to be enlarged automatically whenever a write
-occurs to an out-of-bounds reference, and also for certain operations to
+Another possibility for performant arrays is to implement static analyses
+\textit{de novo} for the dynamic language. However, the greater flexibility
+allowed in arbitrary programs limit the extent of static analyses based on
+finite-height partial ordering over patterns. For example, \MATLAB's array
+semantics allow an array to be enlarged automatically whenever a write occurs
+to an out-of-bounds reference, and also for certain operations to
 automatically promote the element type of an array from real to complex
 numbers. This poses implementation challenges for static \MATLAB{} compilers
 like \code{FALCON}, which have to implement a complete type system with
@@ -212,41 +191,12 @@ specifically for such drastic runtime changes to arrays \cite{Rose:1999tt,
 Li:2013mf}. Additionally, type checking was essential to disambiguate
 \MATLAB{} expressions like \code{A*B}, which, depending on the dimensions of
 \code{A} and \code{B}, could represent a scaling, inner product, outer
-product, matrix- matrix multiplication, matrix-vector multiplication
-\cite{Rose:1999tt}. Similar issues also plague the Octave interpreter over the
-implementation of \MATLAB's array semantics \cite{Eaton:2001op}. These
-challenges are by no means unique to \MATLAB: the same performance issues has
-also led to the development of Hack, a statically typed PHP implementation
-which contains a full static type checking system \cite{Verlaguet:2014hn}.
-Even despite these heroic efforts, the flexibility of languages in this
-category inevitably limits the extent of static analyses (based on a finite-
-height partial order over patterns) that is possible over an arbitrary
-program.
+product, matrix-matrix multiplication, or matrix-vector multiplication
+\cite{Rose:1999tt}. Similar challenges exist in other languages like Octave
+\cite{Eaton:2001op} and Hack, a PHP implementation which contains a full
+static type checking system \cite{Verlaguet:2014hn}.
 
-Third, implementations of such flexible languages often resort to implementing
-arrays in libraries in static languages for the sake of performance. This
-leads to a disjunction between the implementation of arrays and the native
-object system of the language. The machinery of the Python NumPy library is a
-good case in point. NumPy arrays are Python objects, but instead of using the
-native Python object system's semantic mechanisms, NumPy instead has its own
-abstraction mechanisms implemented with a large C code base for compile-time
-code generation and custom runtime dispatch mechanisms. The resulting Python
-objects are little more than lookup tables of behaviors. In
-other languages like R, the disjunction occurs because the array and object
-subsystems were added the language at different points in time.
-
-%TODO other languages: R, APL, ZPL, Lisp?
-
-%% To summarize, the flexibility of languages in this category can lead to faulty
-%% array abstractions and slow performance. To address performance issues,
-%% language implementations must either reimplement large components of compiler
-%% infrastructure in order to perform static analyses like type inference, or
-%% resort to implementing key components of array infrastructure in external
-%% libraries written in a static language like C or Fortran to achieve acceptable
-%% performance, with the result that the first language becomes little more than
-%% a superficial wrapper.
-
-\subsection{The performance---flexibility trade-off}
+%TODO other languages: APL, ZPL, Lisp?
 
 The conflicting requirements of performance and flexibility pose a dilemma for
 language designers and implementers. Most current languages choose either to
@@ -266,11 +216,6 @@ run-time behavior and have it just work. In theory, a compiler could
 partially evaluate programs based on whatever static information it can
 find (e.g. integer constants), but it is unlikely that this would reliably
 provide performance where it is needed.
-
-
-%TODO A static # of dimensions is probably sufficient for most applications,
-%but there is a large cliff where everything changes if your code is more
-%dynamic
 
 %The user should not have to learn two different sets of semantic behavior. In Julia, that's the compiler's job. It does mean that the it's not as fast as a static language.
 
