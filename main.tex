@@ -118,8 +118,8 @@ semantics into compilers.
 
 However, only a few of the languages that support $n$-arrays have sufficient
 power to express the semantics of $n$-arrays for general rank $n$ without
-resorting to hard coding array behavior into a compiler written in a different
-language. These languages support powerful and efficient libraries
+resorting to hard coding array behavior into a compiler.
+These languages support powerful and efficient libraries
 implementing array semantics. Notable examples  include the C++ libraries
 \code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
 \cite{Garcia:2005ma}, and the Haskell Repa (Regular Parallel Arrays) library
@@ -136,11 +136,13 @@ libraries to eliminate runtime overhead for better performance.
 Statically defined array libraries, despite their notable advantages,
 nevertheless still have some limitations. First, the language semantics
 required to achieve the necessary flexibility of expression and performance,
-such as C++ expression templates, are only available at compile time.
+such as C++ templates, are only available at compile time.
 Consequently, these libraries would not be able to support programs using
-$n$-arrays where $n$ is known only at runtime. Second, efficiency necessitates
-the use of notoriously abstruse language features like C++ template
-metaprograms. Third, the recursive peeling strategy for defining $n$-arrays
+$n$-arrays where $n$ is known only at runtime.
+Second, code using compile-time features like C++ templates is
+notoriously difficult to read and write; it is effectively written in a
+separate sub-language.
+Third, the recursive peeling strategy for defining $n$-arrays
 naturally favors only a limited set of indexing behaviors. For example,
 \code{Repa}'s reductions like \code{Sum} are only defined naturally over the
 last index \cite{Keller:2010rs}; computations over other indices require extra
@@ -166,35 +168,38 @@ to the canonical circle-ellipse problem \cite{Halbert:1987ut}.
 
 Applications requiring full runtime flexibility are better expressed in
 dynamic languages such as \Mathematica, \MATLAB, R, and Python/NumPy, where
-most, if not all, operations will be dynamically dispatched. Such flexibility,
-however, has traditionally come at the price of slower performance.
-Array implementations of dynamic languages striving for better performance have
-traditionally resorted to strategies that intimately involve static analyses. One strategy is to implement arrays in an external library
-written in a static language. A prominent example of this strategy is the
-Python NumPy package, which implements special static analyses and dispatch
-mechanisms within a large C code base. As a result, NumPy \code{ndarray}s are
+all operations are dynamically dispatched (at least semantically, if not
+in actual implementation). Such flexibility,
+however, has traditionally come at the price of slower execution.
+To improve performance, dynamic languages typically resort to static analysis
+at some level.
+One strategy is to implement arrays in an external library
+written in a static language.
+The Python NumPy package is a prominent example, implementing array operations
+as well as its own type system and internal abstraction mechanisms within
+a large C code base. As a result, NumPy \code{ndarray}s are
 superficially Python objects, but implementation-wise are disjoint from the
 rest of the Python object system, since little of Python's native object
 semantics are used to define their behavior.
 
-Another possibility for performant arrays is to implement static analyses
-\textit{de novo} for the dynamic language. However, the greater flexibility
-allowed in arbitrary programs limit the extent of static analyses based on
-finite-height partial ordering over patterns. For example, \MATLAB's array
+Another approach is to implement static analyses
+\textit{de novo} for dynamic languages. However, the flexibility
+of arbitrary programs limits the extent of analysis that is
+realistically possible. For example, \MATLAB's array
 semantics allow an array to be enlarged automatically whenever a write occurs
-to an out-of-bounds reference, and also for certain operations to
+to an out-of-bounds index, and also for certain operations to
 automatically promote the element type of an array from real to complex
 numbers. This poses implementation challenges for static \MATLAB{} compilers
 like \code{FALCON}, which have to implement a complete type system with
-multiple compiler passes and complex interprocedural flow analyses to check
+multiple compiler passes and interprocedural flow analyses to check
 specifically for such drastic runtime changes to arrays \cite{Rose:1999tt,
 Li:2013mf}. Additionally, type checking was essential to disambiguate
 \MATLAB{} expressions like \code{A*B}, which, depending on the dimensions of
 \code{A} and \code{B}, could represent a scaling, inner product, outer
 product, matrix-matrix multiplication, or matrix-vector multiplication
-\cite{Rose:1999tt}. Similar challenges exist in other languages like Octave
-\cite{Eaton:2001op} and Hack, a PHP implementation which contains a full
-static type checking system \cite{Verlaguet:2014hn}.
+\cite{Rose:1999tt}. Similar work has been done for other dynamic languages,
+as in Hack, a PHP implementation with a full static type system
+\cite{Verlaguet:2014hn}.
 
 %TODO other languages: APL, ZPL, Lisp?
 
@@ -249,7 +254,7 @@ for dynamic languages, but instead is a crucial language feature that, in
 conjunction with multiple dispatch, are necessary for implement language
 semantics. Second, Julia by virtue of being a dynamic language provides the
 static analyses enabled by type inference and multiple dispatch at runtime. In
-contrast, the C++ expression templates are static semantics that are
+contrast, C++ templates are static semantics that are
 unavailable at runtime, and the semantics of templates are for the purposes of
 runtime programs effectively a separate language. The single all- runtime
 model of Julia is much easier to use and imposes fewer restrictions on the
@@ -289,7 +294,7 @@ languages where array semantics is predicated on static analysis, but multiple
 dispatch allows Julia to be more flexible than just this. Julia also allows
 for generic fall-back methods that are slower because of a lack of static
 analysis, but nonetheless can be dispatched upon. The flexibility that is
-allowed by this approach is a very nonobvious application of multiple
+allowed by this approach is a nonobvious application of multiple
 dispatch.
 
 \subsection{Array indexing rules}
@@ -305,7 +310,7 @@ dropped'', or ``the rank of the result is the sum of the ranks of the
 indexes'' (as in APL).
 
 Here we consider the indexing rules. How to compute shapes of subarrays. How
-to deal with singleton dimensions is but a very special case even though
+to deal with singleton dimensions is but a special case even though
 superficially the rules mention them explicitly.
 
 In Julia, such indexing rules are defined in exactly one place and can be
@@ -319,7 +324,7 @@ can experiment.
 
 In fact different domains want different things. E.g. in images, each
 dimension might be quite different, e.g. time vs. space vs. color, so you
-don't want to drop or rearrange dimensions very often.
+don't want to drop or rearrange dimensions too often.
 
 In practice we may have to reach a consensus on what rules to use, but this
 should not be forced by pure implementation convenience.
