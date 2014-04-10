@@ -97,8 +97,6 @@ library.
 Julia, multiple dispatch, type inference, array indexing, static analysis,
 dynamic dispatch
 
-\section{Introduction}
-
 \begin{quotation}
 ``Unfortunately, it is very difficult for a designer to select in advance all
 the abstractions which the users of his language might need. If a language is
@@ -107,145 +105,84 @@ designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
 
-%BEGIN OUTLINE
+\section{Static analysis is necessary for efficient array implementations}
 
-%Introduction to multiple dispatch: traditionally it is considered an optimization
+$n$-arrays (arrays of rank $n$, or simply `arrays') are an essential data
+structure for technical computing, but are challenging to implement
+efficiently \cite{Sattley:1960as,Sattley:1961as, Randell:1964a6}. There is a
+long history of special-purpose compiler optimizations to make operations over
+arrays efficient, such as loop fusion for array traversals and common
+subexpression elimination for indexing operations \cite{Randell:1964a6,
+Busam:1969oe}. Many language implementations therefore choose to build array
+semantics into compilers.
 
-%Julia philosophy: Instead of MD as a hack, turn it around and make it a core feature of the language.
+However, only a few of the languages that support $n$-arrays have sufficient
+power to express the semantics of $n$-arrays for general rank $n$ without
+resorting to hard coding array behavior into a compiler written in a different
+language. These languages support powerful and efficient libraries
+implementing array semantics. Notable examples  include the C++ libraries
+\code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
+\cite{Garcia:2005ma}, and the Haskell Repa (Regular Parallel Arrays) library
+\cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries, at
+their core, leverage powerful static semantics of their host langangues to
+define $n$-arrays inductively as the outer product of a 1-array with an
+$(n-1)$-array \cite{Bavestrelli:2000ct}. This recursive peeling of rank thus
+defines general $n$-arrays. The dispatch semantics also allows for efficient
+implementations of certain operations; for example, \code{Repa} allows for in-
+memory transposition by dispatching on classes with different memory striding
+rules \cite{Keller:2010rs}. The use of compile-time features allows these
+libraries to eliminate runtime overhead for better performance.
 
-%In this paper we show how to use MD to implement semantic features.
+Statically defined array libraries, despite their notable advantages,
+nevertheless still have some limitations. First, the language semantics
+required to achieve the necessary flexibility of expression and performance,
+such as C++ expression templates, are only available at compile time.
+Consequently, these libraries would not be able to support programs using
+$n$-arrays where $n$ is known only at runtime. Second, efficiency necessitates
+the use of notoriously abstruse language features like C++ template
+metaprograms. Third, the recursive peeling strategy for defining $n$-arrays
+naturally favors only a limited set of indexing behaviors. For example,
+\code{Repa}'s reductions like \code{Sum} are only defined naturally over the
+last index \cite{Keller:2010rs}; computations over other indices require extra
+permutation operations and are not guaranteed to produce an optimal memory
+traversal pattern. The overhead incurred by general indexing operations can be
+avoided only by implementing many special cases that ensure maximal
+exploitation of loop unrolling optimizations and other similar static analyses
+\cite{Garcia:2005ma, Lippmeier:2011ep}, which engenders much repetition in the
+codebase \cite{Lippmeier:2012gp}.
 
-A particularly interesting use case is $n$-arrays (arrays of rank $n$, or
-simply `array'). While 1-arrays are an essential data type in many programming
-languages, multidimensional arrays in their full generality are significantly
-more challenging to implement efficiently \cite{Sattley:1960as,
-Sattley:1961as, Randell:1964a6}. For example, programs that traverse arrays
-require many indexing computations, and for these programs to perform
-efficiently, there is a strong incentive for programming languages to
-implement static analysis such as constant subexpression elimination and loop
-fusion/reordering of array traversals \cite{Busam:1969oe}.
+More importantly, some applications call for semantics that are not amenable
+to static analysis. Certain applications require arrays whose ranks are known
+only at runtime, and thus the data structures in these program cannot be
+guaranteed to fit in a constant amount of memory. Other programs may require
+different semantics for arrays of different ranks. Some technical computing
+applications, for example, wish to treat vectors (1-arrays) differently from
+matrices (2-arrays), supporting computations such as the singular value
+decomposition for the latter but not the former. In such contexts, column
+vectors are no longer equivalent to $N\times1$ matrices or 2-arrays with a
+trailing singleton dimension, and programs that conflate them violate the
+Liskov substitution principle \cite{Liskov:1987da}, in ways are are analogous
+to the canonical circle-ellipse problem \cite{Halbert:1987ut}.
 
-Using arrays an example, we can classify languages into those favoring
-static analysis and those favoring full dynamic generality.
+Applications requiring full runtime flexibility are better expressed in
+dynamic languages such as \Mathematica, \MATLAB, R, and Python/NumPy, where
+most, if not all, operations will be dynamically dispatched. Such flexibility,
+however, has traditionally come at the price of slower performance.
+Array implementations of dynamic languages striving for better performance have
+traditionally resorted to strategies that intimately involve static analyses. One strategy is to implement arrays in an external library
+written in a static language. A prominent example of this strategy is the
+Python NumPy package, which implements special static analyses and dispatch
+mechanisms within a large C code base. As a result, NumPy \code{ndarray}s are
+superficially Python objects, but implementation-wise are disjoint from the
+rest of the Python object system, since little of Python's native object
+semantics are used to define their behavior.
 
-%TODO make a nice figure out of this idea
-%      | Statically knowable   | Not ~ but general
-% -----+-----------------------+-------------------------
-% fast | Haskell, C++, Fortran | (Unattainable perfection)
-% slow | (Undesirable)         | Matlab, APL, Python/NumPy**
-%
-%** Everything in this category doesn't really have the flexibility to write general libraries
-%   _within the same language_, so for performance you have to use a static language.
-%   heroic compilers under the hood are static again.
-
-\subsection{Languages favoring static analysis}
-
-Static languages like Fortran, C/C++ and Haskell fall naturally into this
-category. In extreme cases, some static languages only support $n$-arrays up
-to some fixed maximal rank, like Fortran.\footnote{The maximal rank was 3 in
-FORTRAN I \cite{Backus:1957fa}, increased to 7 in Fortran 77, and later to 15
-in Fortran 2008.} The advantage of imposing rank limits is that specialized
-implementations for each rank $n$ can be written out in full. The
-disadvantage, of course, is that program expressibility is limited and it is
-challenging to write libraries for general $n$-arrays in these languages.
-
-Some static languages, however, have more flexibility while
-still restricting programs to be amenable to static analysis. A notable
-example is C++, where templates allow the implementation of $n$-arrays in performant
-libraries, like \code{Blitz++} \cite{Veldhuizen:1998ab} or
-\code{Boost.MultiArray} \cite{Garcia:2005ma}.  Nevertheless, template
-metaprograms are notoriously difficult to implement and
-comprehend. While $n$-arrays can be implemented compactly using recursive
-templates \cite{Bavestrelli:2000ct}, peeling off $(n-1)$-arrays
-recursively from $n$-arrays, production quality libraries avoid explicit
-recurrences, implementing instead a great many special-cased implementations
-of $n$-arrays to ensure that C++ compilers unroll loops fully to achieve
-maximal performance \cite{Garcia:2005ma}. The recursive peeling design also
-restricts indexing semantics in C++ arrays to traverse only from  leftmost to
-rightmost index. Furthermore, the behavior of templates is not available at
-runtime; C++ programs cannot use arrays
-whose ranks are known only at runtime. Also you have handle dimensions one
-at a time.
-
-Another notable static language that supports $n$-arrays is Haskell, and in
-particular its Repa (Regular Parallel Arrays) library \cite{Keller:2010rs}.
-One key abstraction is the \code{Shape} class, which enables dispatch on the
-index-to-offset mapping function \cite{Keller:2010rs}. This allows for in-
-memory representations of transposed arrays, simply by changing the
-\code{Shape} class to redefine the memory striding rules \cite{Keller:2010rs}.
-Nevertheless, Repa employs the same recursive peeling semantics of C++ array
-libraries: for example, reductions like \code{Sum} are only defined
-over the last index \cite{Keller:2010rs}. In principle, a generalized
-\code{Sum} over an arbitrary index can be composed as \code{Sum} with pre- and
-post-permutations to swap the desired index with the last index. However,
-this is semantically more work and furthermore isn't guaranteed to produce a
-good memory traversal pattern. Similarly, operations over more than one
-dimension are implemented recursively over the dimensions, which means that
-the compiler has to make the difficult decision whether or not to unroll the
-recursion \cite{Lippmeier:2011ep}. Manual unrolling is of course a possibility
-but has the cost of introducing repetition in the code
-\cite{Lippmeier:2012gp}.
-
-%Arguably, a purely functional language like Haskell, which disallows
-%imperative constructs like loops, forces programmers to identify
-%abstractions. With fewer options to implement semantics, semantics is more
-%intimately tied to types.
-
-\subsection{Languages favoring dynamic generality}
-
-Conversely, some applications may call for semantics that are not amenable to
-static analysis. For example, one can envision applications requiring
-arrays whose ranks are known only at runtime. Languages that wish to support
-such applications of some applications cannot choose only to use data
-structures that fit in a constant amount of memory. Another possibility is
-that programs may wish to treat arrays with different numbers of dimensions
-very differently. A vector---an intrinsically one-dimensional object---can be
-conceptually very different from an $N\times1$ matrix, which is intrinsically
-two-dimensional. For example, many linear algebraic computations like the
-singular value decomposition make sense only for matrices, not vectors. These
-differences in object semantics and behavior make the number of dimensions a
-crucial part of program semantics and thus cannot be merely a compiler
-implementation detail. Even though it is possible to construct an isomorphism
-between column vectors and $N\times1$ matrices, semantic differences preclude
-a genuine ``is-a'' relationship, and hence results in a violation of the
-Liskov substitution principle \cite{Liskov:1987da}. We can think of this
-situation as the linear algebraic counterpart to the canonical circle-ellipse
-problem \cite{Halbert:1987ut}. For such applications requiring different
-semantics for different ranks at runtime, runtime flexibility is also essential.
-
-These use cases favor dynamic languages which support full runtime
-flexibility in arrays, such as \Mathematica{}, \MATLAB{} and Python/NumPy,
-and accept that most or all operations will be dynamically dispatched.
-
-However, languages in this category are not without their pitfalls. First,
-array semantics may be implemented using flexible data structure that may
-cause abstraction leakage. For example, \Mathematica{} implements $n$-arrays
-using nested lists of expressions \cite{mathematica:nl, mathematica:int}, with
-the \code{[[]]} (\code{Part}) operator playing the role of array indexing.
-However, \Mathematica's powerful pattern matching semantics are prone to
-abstraction leakage. For example, it is possible to ``index'' an array with
-% Jeff says: This is an interesting example of excessive permissiveness,
-% but it sounds like a strawman since most dynamic languages have data
-% abstraction that works well enough.
-more indices than its rank; the extra indices would simply traverse into the
-expression contained within the matrix element. For example, \code{Array[f,
-{3, 4}][[3, 2]]} returns \code{f[3,2]}, whilst \code{Array[f, {3, 4}][[3, 2,
-1]]} returns \code{3}. Thus the semantics of the \code{Part} symbol is more
-general than pure array indexing and allows for violations of the array data
-abstraction, which may come as a surprise to users. Another example in
-\MATLAB{} comes from implementing arrays of user-defined classes. Since
-\MATLAB{} arrays are not defined in terms of its object system, special care
-must be taken for arrays of user-defined classes to have the same semantic
-behavior as arrays of built- in types. In principle, user-defined classes
-could otherwise lead to arbitrary behavior.
-
-% Jeff calls this "just overloading".
-
-Second, the flexibility of these languages results in generally slow
-performance, and language implementations wishing to attain performance must
-instead resort to advanced static analyses anyway. For example, \MATLAB's
-array semantics allow an array to be enlarged automatically whenever a write
-occurs to an out-of-bounds reference, and also for certain operations to
+Another possibility for performant arrays is to implement static analyses
+\textit{de novo} for the dynamic language. However, the greater flexibility
+allowed in arbitrary programs limit the extent of static analyses based on
+finite-height partial ordering over patterns. For example, \MATLAB's array
+semantics allow an array to be enlarged automatically whenever a write occurs
+to an out-of-bounds reference, and also for certain operations to
 automatically promote the element type of an array from real to complex
 numbers. This poses implementation challenges for static \MATLAB{} compilers
 like \code{FALCON}, which have to implement a complete type system with
@@ -254,41 +191,12 @@ specifically for such drastic runtime changes to arrays \cite{Rose:1999tt,
 Li:2013mf}. Additionally, type checking was essential to disambiguate
 \MATLAB{} expressions like \code{A*B}, which, depending on the dimensions of
 \code{A} and \code{B}, could represent a scaling, inner product, outer
-product, matrix- matrix multiplication, matrix-vector multiplication
-\cite{Rose:1999tt}. Similar issues also plague the Octave interpreter over the
-implementation of \MATLAB's array semantics \cite{Eaton:2001op}. These
-challenges are by no means unique to \MATLAB: the same performance issues has
-also led to the development of Hack, a statically typed PHP implementation
-which contains a full static type checking system \cite{Verlaguet:2014hn}.
-Even despite these heroic efforts, the flexibility of languages in this
-category inevitably limits the extent of static analyses (based on a finite-
-height partial order over patterns) that is possible over an arbitrary
-program.
+product, matrix-matrix multiplication, or matrix-vector multiplication
+\cite{Rose:1999tt}. Similar challenges exist in other languages like Octave
+\cite{Eaton:2001op} and Hack, a PHP implementation which contains a full
+static type checking system \cite{Verlaguet:2014hn}.
 
-Third, implementations of such flexible languages often resort to implementing
-arrays in libraries in static languages for the sake of performance. This
-leads to a disjunction between the implementation of arrays and the native
-object system of the language. The machinery of the Python NumPy library is a
-good case in point. NumPy arrays are Python objects, but instead of using the
-native Python object system's semantic mechanisms, NumPy instead has its own
-abstraction mechanisms implemented with a large C code base for compile-time
-code generation and custom runtime dispatch mechanisms. The resulting Python
-objects are little more than lookup tables of behaviors. In
-other languages like R, the disjunction occurs because the array and object
-subsystems were added the language at different points in time.
-
-%TODO other languages: R, APL, ZPL, Lisp?
-
-%% To summarize, the flexibility of languages in this category can lead to faulty
-%% array abstractions and slow performance. To address performance issues,
-%% language implementations must either reimplement large components of compiler
-%% infrastructure in order to perform static analyses like type inference, or
-%% resort to implementing key components of array infrastructure in external
-%% libraries written in a static language like C or Fortran to achieve acceptable
-%% performance, with the result that the first language becomes little more than
-%% a superficial wrapper.
-
-\subsection{The performance---flexibility trade-off}
+%TODO other languages: APL, ZPL, Lisp?
 
 The conflicting requirements of performance and flexibility pose a dilemma for
 language designers and implementers. Most current languages choose either to
@@ -309,10 +217,7 @@ partially evaluate programs based on whatever static information it can
 find (e.g. integer constants), but it is unlikely that this would reliably
 provide performance where it is needed.
 
-
-%TODO A static # of dimensions is probably sufficient for most applications,
-%but there is a large cliff where everything changes if your code is more
-%dynamic
+%The user should not have to learn two different sets of semantic behavior. In Julia, that's the compiler's job. It does mean that the it's not as fast as a static language.
 
 \section{Julia Arrays}
 
@@ -674,66 +579,25 @@ overhead of tagging and dispatching removed where possible.
 
 \section{Conclusions}
 
-A well-designed language force programmers to write code in ways that are
-amenable to static analysis. Technically speaking you can say that the
-inability to do static analysis is a weakness of compiler implementation, but
-this is also a point about the ``power'' of a language. Compare Julia to the
-past: language abstraction mechanisms were not powerful enough to define
-$n$-arrays. The behaviors had to be built in to the compiler (or inside a very
-elaborate C library like NumPy). In Julia, method signatures plus a general-
-purpose (not array-specific) type inference algorithm can do it. The
-combination turns out to be very important: if you only have multiple
-dispatch, you just have a nifty-but-slow way to write these things. If you
-just have type inference, then you are quite limited in what you can
-realistically infer --- for example an explicit loop over the arguments to
-\code{getindex} is too dynamic, and you can't really infer what it does.
+Well-designed programming languages compromise between the ability to perform
+static analyses and allowing maximal flexbility of user programs. Performance-
+critical language features like arrays benefit greatly from static analyses,
+and so even dynamic languages that lack static analyses want them one way ot
+the other, either by implementing features into the compiler, or in elaborate
+external libraries.
 
-Languages have to compromise between static (compiler) analysis - accept more
-restrictions so that you can do more static analyses - vs user ease of writing
-programs. Other dynamic languages lack extensive static analysis capabilities
-in their default implementations. Implementations with some modicum of static
-analysis can result in large performance gains, like FALCON or Hack. But in
-Julia, we are going one step further and turning the combination of multiple
-dispatch and automatic type inference from a performance optimization hack,
-into a genuine feature of the programming language, and designing a
-programming language to fully leverage the power of this combination.
-Automatic type inference reduces the need for manual, tedious type annotation
-and reduced redundancy in code. At the same time, types in dispatch signatures
-give you access to behavior specialization through multiple dispatch, thus
-enabling better performance.
-
-In contrast with statically typed languages like Haskell, Julia by virtue of
-being a dynamic language can take a more liberal view on type correctness.
-While Julia makes every attempt to infer type information from static
-analysis, Julia does not create any issues over type correctness, but rather
-execute code anyway in the absence of detailed type information. Contrast this
-with the behavior of C++, which is a static language with separate static and
-dynamic semantics. C++ resolves function overloads at compile time; this isn't
-something you can do at runtime.
-
-Automatic type inference allows for a lot of static analysis without a static
-type system. Julia says we do a lot statically without a static type system.
-The design idea is that languages with static types assert that the latter are
-necessary for correctness. But it is also possible that with static analysis
-that the code can be more performant due to specialization.
-
-Julia is sufficiently expressive such that you can write code that in general
-may not be amenable to static analysis, but in many cases the compiler is able
-to analyze it so that you are in the fast (and statically analyzable)
-quadrant. Making it EASIER to move into this quadrant, part of this is because
-it is a single language. Sufficiently expressive to write complex, generic,
-dynamic multidimensional behaviors, but sufficiently analyzable to know when
-it's in one of the cases that C++ or Haskell can express and accordingly
-generate efficient code.
-
-Multiple dispatch changes the ``statically analyzable + fast'' versus ``not
-analyzable + slow'' trade-off from a property of the language to a property of
-a program written in that language. It is a remarkably efficient way to enable
-the expressiveness ability to write dynamic code that can nonetheless be
-analyzed statically in sufficiently many cases to attain performance. Multiple
-dispatch is not just an optimization hack, but can be used in an unprecedented
-way to address the performance---flexibility compromise that we believe
-achieves greater Pareto optimality than other existing solutions to this
+We believe that the combination of automatic type inference and multiple
+dispatch is not merely an optimization hack, but instead can be used to design
+a programming language where they become core semantic features. The
+implementation of these features in Julia is a remarkably efficient way to
+allow code to be specialized to leverage static analyses for performance, yet
+at the same time allows for other code written for maximal flexibility even in
+the absence of detailed type information. Static analyzability becomes no
+longer a property of an entire language, but instead an optional property of
+specific programs in a particular language. Julia is therefore sufficiently
+expressive to write complex, generic, dynamic multidimensional behaviors, and
+more generally allows us to address the performance---flexibility compromise
+in Julia with greater Pareto optimality than other existing solutions to this
 trade-off.
 
 %\appendix
@@ -745,9 +609,12 @@ trade-off.
 
 The authors gratefully acknowledge the enthusiastic participation of the Julia
 developer community for many stimulating discussions on the topic of array
-implementations in the Julia language.
-
-%TODO thank Intel, Wade, and perhaps NSF Solar here
+implementations in the Julia language, in particular Dahua Lin and Keno
+Fischer for the \code{ArrayViews.jl}\cite{Lin:2014av} and
+\code{SIUnits.jl}\cite{Fischer:2014si} packages respectively. Funding for this
+work was supported from the MIT Deshpande Center, an Intel Science and
+Technology award, a grant from VMWare, Citibank, a Horizontal Software
+Fellowship in Compuational Engineering, and NSF DMS-1035400.
 
 % We recommend abbrvnat bibliography style.
 
