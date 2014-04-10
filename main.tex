@@ -460,8 +460,8 @@ arguments, and the method with the most specific signature matching the
 arguments is invoked.
 
 One can invent examples where multiple dispatch is useful in classic OO domains
-such as GUI programming. We might define a method for drawing a label onto
-a button as follows (in Julia syntax):
+such as GUI programming. A method for drawing a label onto a button might
+look like this in Julia syntax:
 
 \begin{verbatim}
 function draw(target::Button, obj::Label)
@@ -469,7 +469,7 @@ function draw(target::Button, obj::Label)
 end
 \end{verbatim}
 
-In a numerical setting, binary operators are common and we can easily imagine
+In a numerical setting, binary operators are ubiquitous and we can easily imagine
 needing to define special behavior for some combination of two arguments:
 
 \begin{verbatim}
@@ -487,11 +487,14 @@ Python's \code{\_\_add\_\_} and \code{\_\_radd\_\_} methods.
 However, we have come to believe that while multiple dispatch might not
 have much impact in other kinds of programming, technical computing is its
 killer application. To a large extent, technical computing is characterized
-by the prevalence of highly polymorphic, multi-argument operators. Many of
-these can be effectively expressed using a multiple dispatch system that also
-supports variadic functions.
+by the prevalence of highly polymorphic, multi-argument operators. In many
+cases though, these functions are even more complex than the 2-argument
+examples above might indicate. To handle these, we have added a few
+features that are not always found in multiple dispatch implementations.
 
-This combination of features seems straightforward
+For this paper, perhaps the most important of these is support for
+variadic methods. Combining multiple dispatch and variadic methods
+seems straightforward
 enough, and yet it permits surprisingly powerful definitions. For example,
 consider a variadic \code{sum} function that adds up its arguments. We could
 write the following two methods for it (note that in Julia, \code{Real} is
@@ -504,6 +507,8 @@ sum(xs::Integer...)
 sum(xs::Real...)
 \end{verbatim}
 
+The syntax \code{...} allows an argument slot to match any number of trailing
+arguments (currently, Julia only allows this at the end of a method signature).
 In the first case, all arguments are integers and so we can use a naive
 summation algorithm. In the second case, we know that at least one argument
 is not an integer, so we might want to use some form of compensated
@@ -517,13 +522,63 @@ are not redundant: they are necessary to specify the desired behavior. There
 is also no loss of flexibility: \code{sum} can be called with any combination
 of number types, as users of dynamic technical computing languages would expect.
 
-
+While the author of these definitions does not write a loop to examine
+argument types, such a loop of course still must take place somewhere inside
+the dispatch system. Such a complex dispatch system is naturally at risk of
+performing badly. However, Julia pervasively applies data-flow type
+inference, so that argument types are often known in advance, in turn
+allowing method lookup to be done at compile time. Technically this is
+just an optimization, but in practice it has a profound impact on how code
+is written.
 
 \subsection{\texttt{index\_shape}}
 
-Below we define a function \texttt{index\_shape} that computes the shape of a
-result array given a series of index arguments. We show three versions, each
-implementing a different rule that users in different domains might want:
+Multiple dispatch appears at first to be about operator overloading:
+defining the behavior of functions on new, user-defined types.
+But the fact that the compiler ``knows'' the types of function arguments leads
+to a surprising, different application: performing elaborate, mostly-static,
+transformations of argument lists.
+
+Determining the result shape of an indexing operation is just such a
+transformation. In Julia's standard library, we have a function
+\texttt{index\_shape} that accepts index arguments (which, for present
+purposes, may be scalars or arrays of any rank), and returns the
+shape (a tuple of integers) of the result. The length of the shape
+determines the rank of the result array. Many different behaviors
+are possible, but currently we use the rule that trailing dimensions
+indexed with scalars are dropped\footnote{This rule is the subject of
+some debate in the Julia community. Fortunately it is easy to change,
+as we will see.}.
+For example:
+
+\begin{verbatim}
+A[1:m, 1:n, 2]     # rank 2
+A[1:m, 2, 1:n]     # rank 3
+A[1:m, 2, 1:n, 1]  # rank 3
+\end{verbatim}
+
+The following two method definitions express this behavior:
+
+{\small
+\begin{verbatim}
+# drop trailing dimensions indexed with scalars
+index_shape(i::Real...) = ()
+index_shape(i, I...)    = tuple(length(i), index_shape(I...)...)
+\end{verbatim}
+}
+
+The syntax \code{...} within an expression (on the right-hand side of
+a definition) performs ``argument splicing'': the elements of a container
+are spread into multiple arguments to the called function.
+The first definition traps and collapses runs of \code{Real} arguments of
+any length. The second definition ensures that the first definition only
+applies to the tail of an argument list, by keeping indexes as long as
+some non-scalar arguments remain.
+
+% not a separate mechanism - smooth path from OOP to generic, symbolic prog.
+% users get used to writing multi-method signatures, and as they write
+% more elaborate ones they smoothly transition to using compile-time
+% abstraction (without realizing it?).
 
 {\small
 \begin{verbatim}
@@ -534,26 +589,8 @@ index_shape(i, I...) = tuple(length(i), index_shape(I...)...)
 \end{verbatim}
 }
 
-\noindent Notes: \newline
-1. \verb+i::Real+ denotes a scalar which is dropped \newline
-2. \verb+I...+ denotes the remainder of the arguments to be parsed next \newline
-3. \verb+length+ counts  elements in an array index, thereby flattening \verb+i+
-4. The rightmost three dots flatten the tuple
-
 %TODO make the point that recursive peeling is more general than one dimension
 %at a time.
-
-{\small
-\begin{verbatim}
-# drop trailing dimensions indexed with scalars
-index_shape(i::Real...) = ()
-index_shape(i, I...) = tuple(length(i), index_shape(I...)...)
-\end{verbatim}
-}
-
-\noindent Notes: \newline
-1. \verb+i::Real...+ denotes trailings scalars  which are dropped \newline
-
 
 {\small
 \begin{verbatim}
