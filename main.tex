@@ -3,8 +3,6 @@
 % The following \documentclass options may be useful:
 % preprint      Remove this option only once the paper is in final form.
 
-% Alan TODO:  Can we actually see some Julia arrays, in their full flexibility
-
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -50,36 +48,34 @@
            {MIT Computer Science and Artificial Intelligence Laboratory}
   { bezanson@mit.edu, jiahao@mit.edu, stefan@karpinski.org, viral@mayin.org, edelman@mit.edu }
 
-%TODO Get Dahua to sign on as coauthor
-%\authorinfo{Dahua Lin}
-%           {Toyota Technological Institute at Chicago}
-%           {dhlin@ttic.edu}
-
 \maketitle
 
 \begin{abstract}
 
 Arrays are such a rich and fundamental data type that they tend to be built in to
 a language, either in the compiler or in a large low-level library.
-% TODO: a sentence about why this is not good and why we need more flexibility
+It would be better to define this functionality at the user level, providing more
+flexibility for application domains not envisioned by the language designer.
 Only a few languages, such as C++ and Haskell, provide the necessary power to define
-n-dimensional arrays, but these systems rely on compile-time abstraction to provide
-performance, sacrificing some amount of flexibility.
+$n$-dimensional arrays, but these systems rely on compile-time abstraction,
+sacrificing some amount of flexibility.
 In contrast, dynamic languages make it straightforward for the user to define any
 behavior they might want, but at the possible expense of performance.
 
 As part of the Julia language project, we have developed an approach that yields
 a novel trade-off between flexibility and compile-time analysis. The core
-abstraction we use is multiple dispatch. This has been extensively studied
-as a general object-oriented programming technique, but we find it
-especially relevant to technical and array-based programming. By expressing
-key functions such as array indexing using multi-method
+abstraction we use is multiple dispatch.
+We have come to believe that while multiple dispatch has not been especially popular
+in most kinds of programming, technical computing is its killer application.
+%This has been extensively studied
+%as a general object-oriented programming technique, but we find it
+%especially relevant to technical and array-based programming.
+By expressing key functions such as array indexing using multi-method
 signatures, a surprising range of behaviors can be obtained, in a way that is
 both relatively easy to write and amenable to compiler analysis.
 The compact factoring of concerns provided by these methods makes it easier
 for user-defined types to behave consistently with types in the standard
 library.
-
 
 %pulls out abstractions that might not have been named before
 %creates better integration of user-defined types
@@ -394,9 +390,8 @@ not essential, and the feature is not often used \cite{Muschevici:2008}.
 Perhaps the few cases that seem to need it can be handled using tricks like
 Python's \code{\_\_add\_\_} and \code{\_\_radd\_\_} methods.
 
-However, we have come to believe that while multiple dispatch might not
-have much impact in other kinds of programming, technical computing is its
-killer application. To a large extent, technical computing is characterized
+However, multiple dispatch looks quite different in the context of technical
+computing. To a large extent, technical computing is characterized
 by the prevalence of highly polymorphic, multi-argument operators. In many
 cases though, these functions are even more complex than the 2-argument
 examples above might indicate. To handle these, we have added a few
