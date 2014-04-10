@@ -389,7 +389,7 @@ needing to define special behavior for some combination of two arguments:
 But how much more is there? Would we ever need to define a method on
 \emph{three} different types at once? Indeed, most language designers and
 programmers seem to have concluded that multiple dispatch might be nice, but is
-not essential, and the feature is not often used.
+not essential, and the feature is not often used \cite{Muschevici:2008}.
 %TODO: cite statistic from study of multiple dispatch showing it is lightly used
 Perhaps the few cases that seem to need it can be handled using tricks like
 Python's \code{\_\_add\_\_} and \code{\_\_radd\_\_} methods.
@@ -435,7 +435,7 @@ of number types, as users of dynamic technical computing languages would expect.
 While the author of these definitions does not write a loop to examine
 argument types, such a loop of course still must take place somewhere inside
 the dispatch system. Such a complex dispatch system is naturally at risk of
-performing badly. However, Julia pervasively applies data-flow type
+performing badly. However, Julia pervasively applies dataflow type
 inference, so that argument types are often known in advance, in turn
 allowing method lookup to be done at compile time. Technically this is
 just an optimization, but in practice it has a profound impact on how code
@@ -485,37 +485,63 @@ any length. The second definition ensures that the first definition only
 applies to the tail of an argument list, by keeping indexes as long as
 some non-scalar arguments remain.
 
-% not a separate mechanism - smooth path from OOP to generic, symbolic prog.
-% users get used to writing multi-method signatures, and as they write
-% more elaborate ones they smoothly transition to using compile-time
-% abstraction (without realizing it?).
+Since all indexing functions call this function, changing these two lines is
+sufficient to change how indexing works. For example, another rule one might
+want is to drop \emph{all} dimensions indexed with scalars:
 
 {\small
 \begin{verbatim}
 # drop dimensions indexed with scalars
-index_shape() = ()
+index_shape()              = ()
 index_shape(i::Real, I...) = index_shape(I...)
-index_shape(i, I...) = tuple(length(i), index_shape(I...)...)
+index_shape(i, I...)       = tuple(length(i), index_shape(I...)...)
 \end{verbatim}
 }
 
-%TODO make the point that recursive peeling is more general than one dimension
-%at a time.
+Or we could immitate APL's behavior, where the rank of the result is the sum
+of the ranks of the indexes, as follows:
 
 {\small
 \begin{verbatim}
 # rank summing (APL)
-index_shape() = ()
+index_shape()        = ()
 index_shape(i, I...) = tuple(size(i)..., index_shape(I...)...)
 \end{verbatim}
 }
 
+Here \code{size} (as opposed to \code{length}) gives the shape tuple of an array,
+so we are just concatenating shapes.
 
-\noindent Notes: \newline
-1. \verb+size(i)+ in contrast to \verb+length(i)+ incorporates component index shapes \newline
 
-These definitions are concise, easy to write, and possible for a compiler to
-understand fully using straightforward techniques.
+\subsection{Why it works}
+
+Julia's multi-methods were designed with the idea that dataflow type inference
+\cite{Cousot:1977} \cite{kaplanullman}
+would be applied to almost all concrete instances of methods, based on
+run-time argument types or compile-time estimated argument types. Without this
+piece of infrastructure, definitions like those above would be perhaps no more
+than a perversely slow way to implement the functionality. But with it, the
+definitions have the effect of ``forcing'' the analysis to deduce accurate
+types. In effect, such definitions are designed to exploit the dataflow
+operation of matching inferred argument types against method signatures,
+thereby destructuring and recurring through argument lists at compile time.
+
+From the programmer's perspective, Julia's multi-methods are convenient
+because they provide run-time and compile-time abstraction in a single
+mechanism. Having learned Julia's ``object'' system, one has also learned
+its ``template'' system, without different syntax or reasoning about
+binding time. Semantically, methods always dispatch on run-time
+types, so the same definitions are applicable whether types are known
+statically or not.
+
+One price of this flexibility is that not all such definitions are well-founded:
+it is possible to write methods that yield tuples of indeterminate length.
+The compiler must recognize this condition and apply widening operators
+\cite{Cousot:1977} \cite{widening}. In these cases, the deduced types are
+still correct but imprecise, and in a way that depends on somewhat arbitrary
+choices of widening operators (for example, such a type might look
+like \code{(Int...)} or \code{(Int,Int...)}).
+
 
 %TODO: point out how this combines the ``object part'' and the ``array part''
 %into a coherent whole.
@@ -523,36 +549,34 @@ understand fully using straightforward techniques.
 %using language X itself, and in particular using intrinsic features for handling
 %objects to also handle arrays.
 
-The result type is determined using only dataflow type inference, plus a rule
-for splicing an immediate container (the type of \texttt{f((a,b)...)} is the
-type of \texttt{f(a,b)}). Argument list destructuring takes place inside the
-type intersection operator used to combine argument types with method
-signatures.
+%The result type is determined using only dataflow type inference, plus a rule
+%for splicing an immediate container (the type of \texttt{f((a,b)...)} is the
+%type of \texttt{f(a,b)}). Argument list destructuring takes place inside the
+%type intersection operator used to combine argument types with method
+%signatures.
 
-This approach does not depend on any heuristics. Each call to
-\texttt{index\_shape} simply requires one recursive invocation of type
-inference. This process reaches the base case \texttt{()} for these
-definitions, since each recursive call handles a shorter argument list (for
-less-well-behaved definitions, we might end up invoking a widening operator
-instead).
+%This approach does not depend on any heuristics. Each call to
+%\texttt{index\_shape} simply requires one recursive invocation of type
+%inference. This process reaches the base case \texttt{()} for these
+%definitions, since each recursive call handles a shorter argument list (for
+%less-well-behaved definitions, we might end up invoking a widening operator
+%instead).
 
-\begin{verbatim}
+%\begin{verbatim}
+%diverge() = randbool() ? () : tuple(1, diverge()...)
+%\end{verbatim}
 
-diverge() = randbool() ? () : tuple(1, diverge()...)
-
-\end{verbatim}
-
-This is an example of indexing behavior that is not amenable to useful static
-analysis, since each branch of \code{diverge()} has different types.
+%This is an example of indexing behavior that is not amenable to useful static
+%analysis, since each branch of \code{diverge()} has different types.
 
 %TODO say something about how types of tuples in Julia are defined.
 
-Such code would throw a type error in languages requiring statically
-checkableness such as Haskell. But in Julia, this is still allowed just that
-the compiler may not have useful information from static analysis and so may
-not run as fast. In Repa, the top priority is to appease the type system of
-Haskell, with performance and user interface secondary. We think it should be
-the other way round.
+%Such code would throw a type error in languages requiring static
+%checking such as Haskell. But in Julia, this is still allowed just that
+%the compiler may not have useful information from static analysis and so may
+%not run as fast. In Repa, the top priority is to appease the type system of
+%Haskell, with performance and user interface secondary. We think it should be
+%the other way round.
 
 \section{Extensions of the idea}
 
