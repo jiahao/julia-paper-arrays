@@ -237,9 +237,15 @@ implementing arrays in an external library written in a static language.
 %TODO need some words to connect to Figure~\ref{fig:langdesign}
 
 \begin{figure}
-  \caption{\label{fig:langdesign}Design of dynamic languages and their implementations: traditionally, dynamic languages were created by language designers before considerations of program analyses, which were left as follow-up details for implementation. In contrast, the Julia language is designed from the beginning to facilitate program analyses, with a single community responsible for both language design and implementation.}
   \centering
   \includegraphics[width=\columnwidth]{fig-langdesign}
+  \caption{\label{fig:langdesign}
+Most dynamic languages are designed without consideration for program analysis,
+leaving this to other, future compiler writers and researchers who step in if
+the language becomes popular enough to warrant it.
+Julia is designed with analysis in mind, with a single community responsible for both
+language design and performant implementation. This approach is natural for
+statically-typed languages, but dynamic languages need static analysis too.}
 \end{figure}
 
 \section{Julia arrays}
@@ -405,17 +411,18 @@ should not be forced by technical limitations.
 
 \subsection{Multiple dispatch}
 
-As shown in Figure~\ref{fig:dispatch}, multiple dispatch (also known as generic functions, or multi-methods) is an
+Multiple dispatch (also known as generic functions, or multi-methods) is an
 object-oriented paradigm where methods are defined on combinations of data
-types (classes), instead of encapsulating methods inside classes. Methods are
+types (classes), instead of encapsulating methods inside classes
+(Figure~\ref{fig:dispatch}). Methods are
 grouped into generic functions. A generic function can be applied to several
 arguments, and the method with the most specific signature matching the
 arguments is invoked.
 
 \begin{figure}
-  \caption{\label{fig:dispatch}Object-oriented method dispatch vs. multiple dispatch. Julia employs multiple dispatch to implement a wide variety of semantics.}
   \centering
   \includegraphics[width=\columnwidth]{fig-md-oo}
+  \caption{\label{fig:dispatch}Class-based method dispatch vs. multiple dispatch.}
 \end{figure}
 
 One can invent examples where multiple dispatch is useful in classic OO domains
