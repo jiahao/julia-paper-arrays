@@ -103,33 +103,28 @@ designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
 
-$n$-arrays (arrays of rank $n$, or simply `arrays') are an essential data
+$n$-arrays (arrays of rank $n$, or simply arrays) are an essential data
 structure for technical computing, but are challenging to implement
-efficiently \cite{Sattley:1960as,Sattley:1961as, Randell:1964a6}. There is a
+efficiently \cite{Sattley:1960as,Sattley:1961as,Randell:1964a6}. There is a
 long history of special-purpose compiler optimizations to make operations over
 arrays efficient, such as loop fusion for array traversals and common
 subexpression elimination for indexing operations \cite{Randell:1964a6,
 Busam:1969oe}. Many language implementations therefore choose to build array
 semantics into compilers.
 
-However, only a few of the languages that support $n$-arrays have sufficient
+Only a few of the languages that support $n$-arrays, however, have sufficient
 power to express the semantics of $n$-arrays for general rank $n$ without
 resorting to hard-coding array behavior into a compiler.
-Notable examples include C++, with libraries like
-\code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
+Notable examples include the C++ libraries 
+\code{Blitz++} \cite{Veldhuizen:1998ab} and \code{Boost.MultiArray}
 \cite{Garcia:2005ma}, and Haskell's Repa (Regular Parallel Arrays)
 \cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries
 leverage the static semantics of their host languages to
 define $n$-arrays inductively as the outer product of a 1-array with an
 $(n-1)$-array \cite{Bavestrelli:2000ct}.
-A common pattern in such libraries is to handle dimensions one at a time,
-recursively, so the compiler can understand each step.
-Knowing array rank at compile time is valuable, since the amount of
-storage needed for the dimension sizes is then known, and index
-computations can be fully unrolled.
+Array libraries typically handle dimensions recursively, one at a time; for arrays with ranks are known at compile time allow the compiler to infer the amount of storage needed for the shape information, and potentially unroll index computations fully.
 
-%This recursive peeling of rank thus
-%defines general $n$-arrays. The dispatch semantics also allows for efficient
+%The dispatch semantics also allows for efficient
 %implementations of certain operations; for example, \code{Repa} allows for in-
 %memory transposition by dispatching on classes with different memory striding
 %rules \cite{Keller:2010rs}. The use of compile-time features allows these
@@ -137,21 +132,21 @@ computations can be fully unrolled.
 
 \subsection{Static tradeoffs}
 
-Array libraries built using compile-time abstraction have good performance,
+Array libraries built using compile time abstraction have good performance,
 but also some limitations.
-First, features like C++ templates are not available at run time, so these
+First, language features like C++ templates are not available at run time, so these
 libraries do not support $n$-arrays where $n$ is known only at run time.
 Second, code using these features is
 notoriously difficult to read and write; it is effectively written in a
-separate sub-language.
+separate sublanguage.
 Third, the recursive strategy for defining $n$-arrays
 naturally favors only certain indexing behaviors. For example,
 \code{Repa}'s reductions like \code{sum} are only defined naturally over the
 last index \cite{Keller:2010rs}; reducing over a different index requires
-a permutation.
+permutations.
 However, it is worth noting that Haskell's type system encourages
 elegant factoring of abstractions. While the syntax may be unfamiliar,
-we feel \code{Repa} ought to hold much interest for the technical computing
+we feel that \code{Repa} ought to hold much interest for the technical computing
 community.
 %permutation operations and are not guaranteed to produce an optimal memory
 %traversal pattern. The overhead incurred by general indexing operations can be
@@ -196,8 +191,7 @@ semantics is used to define their behavior.
 
 Another approach is to implement static analyses
 \textit{de novo} for dynamic languages. However, the flexibility
-of these languages' programs limits the extent of analysis that is
-realistically possible. For example, \MATLAB's array
+of these languages' programs limits the extent of analysis in practice. For example, \MATLAB's array
 semantics allow an array to be enlarged automatically whenever a write occurs
 to an out-of-bounds index, and also for certain operations to
 automatically promote the element type of an array from real to complex
@@ -222,7 +216,7 @@ performance, like C++ and Haskell, or choose to support more general
 classes of programs, like \MATLAB, \Mathematica, and Python/NumPy. While
 dynamic languages nominally give up static analysis in the process, many
 implementations of these languages still resort to static analysis in
-practice, either by hard-coding array semantics in a post-hoc compiler, or by
+practice, either by hard-coding array semantics \textit{post hoc} in a compiler, or by
 implementing arrays in an external library written in a static language.
 
 %A key problem with dynamic languages is how to provide more declarative
@@ -234,35 +228,32 @@ implementing arrays in an external library written in a static language.
 
 %The user should not have to learn two different sets of semantic behavior. In Julia, that's the compiler's job. It does mean that the it's not as fast as a static language.
 
-%TODO need some words to connect to Figure~\ref{fig:langdesign}
-
 \begin{figure}
   \centering
   \includegraphics[width=\columnwidth]{fig-langdesign}
   \caption{\label{fig:langdesign}
-Most dynamic languages are designed without consideration for program analysis,
-leaving this to other, future compiler writers and researchers who step in if
-the language becomes popular enough to warrant it.
-Julia is designed with analysis in mind, with a single community responsible for both
-language design and performant implementation. This approach is natural for
-statically-typed languages, but dynamic languages need static analysis too.}
+Most dynamic languages are designed without consideration for program
+analysis, leaving this to others---future compiler writers and researchers---who
+step in if the language becomes popular enough to warrant it.
+Julia is designed with analysis in mind, with a single community responsible 
+for both language design and performant implementation. This approach is
+natural for statically typed languages, but dynamic languages need static analysis too.}
 \end{figure}
 
 \section{Julia arrays}
 
 Julia is dynamically typed and is based on dynamic multiple dispatch.
-However, the language (and its standard library) have been designed to
+However, the language and its standard library have been designed to
 take advantage of the possibility of static analysis
 (Figure~\ref{fig:langdesign}), especially
 dataflow type inference. In this section we will describe some features
 of the array implementation that arise from this design decision.
 
-Arrays are implemented in Julia\cite{Bezanson:2012jf} as the \code{Array}
-data type, which is parameterized by an element type and a rank (an integer).
-For purposes of this paper, an \code{Array} can be considered a tuple of
+In this section, we describe how multiple dispatch, as a core feature of the Julia language\cite{Bezanson:2012jf}, is used to implement the \code{Array}
+data type, which is parameterized by an element type and a rank (an integer).\footnote{For purposes of this paper, an \code{Array} can be considered a tuple of
 a contiguous memory region and a shape (a tuple of integers giving the size
 of the array in each dimension). This simple representation is already
-enough to require nontrivial design decisions.
+enough to require nontrivial design decisions.} 
 
 %% Multiple dispatch makes it possible for \code{Array}s to have implementations
 %% that afford both generality and efficiency. The most general
@@ -350,16 +341,15 @@ with scalars are dropped'', or ``trailing dimensions of size one are
 dropped'', or ``the rank of the result is the sum of the ranks of the
 indexes'' (as in APL).
 
-The recursive approach favored in static languages tends to force this
-design decision. For example, in C++ a 3-dimensional indexing
-expression might be written as \code{A[i][j][k]}. Here there are three
-applications of \code{operator[]}, each of which will decide whether to
+The recursive approach to array semantics that is favored in static languages often encourages a design decision that lends itself naturally to the semantic structure of the language. For example, an indexing expression
+of a 3-array in C++ might be written as \code{A[i][j][k]}. Here there are 
+three applications of \code{operator[]}, each of which will decide whether or not to
 drop a dimension based on the type of a single index. The second rule
 described above, and others like it, cannot be implemented in such a
 scheme.
 
-Our dispatch mechanism permits a novel approach that encompasses more
-rules, and does not require array rank to be known statically but
+Julia's dispatch mechanism permits a novel approach that encompasses more
+rules, and does not require array rank to be known statically, yet
 benefits when it is.
 This solution is still a compromise among the factors outlined in
 the introduction, but it is a new compromise that we find compelling.
@@ -377,37 +367,32 @@ Our goal here is a bit unusual: we are not concerned with which rules might
 work best, but merely with how they can be specified, so that domain experts
 can experiment.
 
-In fact different domains want different things. In image processing for
-example, each dimension might be quite different, e.g. time vs. space vs. color,
-so you don't want to drop or rearrange dimensions too often. In linear algebra
-on the other hand, one might want a row or column of a matrix to become a vector
-by dropping a dimension.
+In fact, different applications may desire different indexing behaviors. For
+example, applications employing arrays with units or other semantic meaning
+associated with each dimension may not want to have the dimensions dropped or
+rearranged. For example, tomographic imaging applications may want arrays
+representing stacks of images as the imaging plane moves through a three-
+dimensional object. The resulting array would have associated space/time
+dimensions on top of the dimensions indexing into individual color planes. In
+other applications, the dimensions are not semantically distinguishable and it
+may be desirable to drop singleton dimensions. For example, a statistical
+computation may find it convenient to represent an $n$-point correlation
+function in an $n$-array, and integrate over $k$ points to generate the lower
+order $(n-k)$-correlation functions; the indistinguishability of the points
+means that the result is most conveniently expressed wirh rank $(n-k)$
+rather than an $n$-array with $k$ singleton dimensions.
+
+%In linear algebra on the other hand, one might want a row or column of a
+% matrix to become a vector by dropping a dimension.
 
 In practice we may have to reach a consensus on what rules to use, but this
 should not be forced by technical limitations.
-
-%% (jeff says) TODO: these look like good examples but I don't know enough about
-%% them to flesh this out.
-%In Julia, these are not enforced a priori. Sometimes the
-%distinctions between the various indexing rules are semantically meaningful
-%and that's when this flexibility becomes particularly valuable. For example
-%Tim Holy's image 4-arrays. Quantum mechanics when you average out multiple
-%indistinguishable particles. $n$-point correlations functions where which $k$
-%indices you average out defines any number of lower-point $n-k$ point
-%correlation functions.
 
 %% Instead of the compiler analyzing indexing expressions and determining an
 %% answer using hard-coded logic, we would rather implement the behavior in
 %% libraries, so that different kinds of arrays may be defined, or so that rules
 %% of similar complexity may be defined for other kinds of objects. But these
-%% kinds of rules are unusually difficult to implement in libraries. If a library
-%% writes out its indexing logic using imperative code, the host language
-%% compiler is not likely to be able to analyze it.
-
-%Why is it important to be able to express this in a library? No hidden
-%theories, some sort of consistency. Another reason is heuristic, don't really
-%know what people want in the future. Put in what people know now, hope that
-%the next generation will still have the flexibility to modify it to their
+%% kinds of rules are unusually diffMation will still have the flexibility to modify it to their
 %needs.
 
 \subsection{Multiple dispatch}
