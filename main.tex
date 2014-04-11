@@ -124,7 +124,9 @@ define $n$-arrays inductively as the outer product of a 1-array with an
 $(n-1)$-array \cite{Bavestrelli:2000ct}.
 A common pattern in such libraries is to handle dimensions one at a time,
 recursively, so the compiler can understand each step.
-
+Knowing array rank at compile time is valuable, since the amount of
+storage needed for the dimension sizes is then known, and index
+computations can be fully unrolled.
 
 %This recursive peeling of rank thus
 %defines general $n$-arrays. The dispatch semantics also allows for efficient
@@ -135,8 +137,8 @@ recursively, so the compiler can understand each step.
 
 \subsection{Static tradeoffs}
 
-Array libraries built using compile-time abstraction, despite their good
-performance, nevertheless have some limitations.
+Array libraries built using compile-time abstraction have good performance,
+but also some limitations.
 First, features like C++ templates are not available at run time, so these
 libraries do not support $n$-arrays where $n$ is known only at run time.
 Second, code using these features is
@@ -333,6 +335,20 @@ with scalars are dropped'', or ``trailing dimensions of size one are
 dropped'', or ``the rank of the result is the sum of the ranks of the
 indexes'' (as in APL).
 
+The recursive approach favored in static languages tends to force this
+design decision. For example, in C++ a 3-dimensional indexing
+expression might be written as \code{A[i][j][k]}. Here there are three
+applications of \code{operator[]}, each of which will decide whether to
+drop a dimension based on the type of a single index. The second rule
+described above, and others like it, cannot be implemented in such a
+scheme.
+
+Our dispatch mechanism permits a novel approach that encompasses more
+rules, and does not require array rank to be known statically but
+benefits when it is.
+This solution is still a compromise among the factors outlined in
+the introduction, but it is a new compromise that we find compelling.
+
 %Here we consider the indexing rules. How to compute shapes of subarrays. How
 %to deal with singleton dimensions is but a special case even though
 %superficially the rules mention them explicitly.
@@ -347,12 +363,10 @@ work best, but merely with how they can be specified, so that domain experts
 can experiment.
 
 In fact different domains want different things. In image processing for
-example, each
-dimension might be quite different, e.g. time vs. space vs. color, so you
-don't want to drop or rearrange dimensions too often. In linear algebra on
-the other hand,
-one might want a row or column of a matrix to become a vector by dropping
-a dimension.
+example, each dimension might be quite different, e.g. time vs. space vs. color,
+so you don't want to drop or rearrange dimensions too often. In linear algebra
+on the other hand, one might want a row or column of a matrix to become a vector
+by dropping a dimension.
 
 In practice we may have to reach a consensus on what rules to use, but this
 should not be forced by technical limitations.
@@ -367,7 +381,6 @@ should not be forced by technical limitations.
 %indices you average out defines any number of lower-point $n-k$ point
 %correlation functions.
 
-
 %% Instead of the compiler analyzing indexing expressions and determining an
 %% answer using hard-coded logic, we would rather implement the behavior in
 %% libraries, so that different kinds of arrays may be defined, or so that rules
@@ -381,14 +394,6 @@ should not be forced by technical limitations.
 %know what people want in the future. Put in what people know now, hope that
 %the next generation will still have the flexibility to modify it to their
 %needs.
-
-Our dispatch mechanism permits a novel solution. If a multiple dispatch system
-supports variadic functions and argument ``splicing'' (the ability to pass a
-structure of $n$ values as $n$ separate arguments to a function), then
-indexing behavior can be defined as method signatures.
-
-This solution is still a compromise among the factors outlined above, but it
-is a new compromise that we find compelling.
 
 \subsection{Multiple dispatch}
 
@@ -506,9 +511,10 @@ index_shape(i, I...)    = tuple(length(i),
 \end{verbatim}
 }
 
-The syntax \code{...} within an expression (on the right-hand side of
-a definition) performs ``argument splicing'': the elements of a container
-are spread into multiple arguments to the called function.
+(The syntax \code{...} within an expression, on the right-hand side of
+a definition, performs ``argument splicing'': the elements of a container
+are spread into multiple arguments to the called function. Formal
+arguments that lack a \code{::} type specializer match any value.)
 The first definition traps and collapses runs of \code{Real} arguments of
 any length. The second definition ensures that the first definition only
 applies to the tail of an argument tuple, by keeping indexes as long as
@@ -588,7 +594,9 @@ statically or not. Initially, a programmer's intent may be for all types
 to be known statically. But if needs change and one day array rank needs
 to be a run time property, the same definitions still work (with the only
 difference being that the compiler will generate a dynamic dispatch or
-two where there were none before).
+two where there were none before). It is also possible to use popular
+dynamic constructs such as \code{A[I...]} where \code{I} is a heterogeneous
+array of indexes.
 %Therefore users are free to reason about
 %programs operationally, while gaining richer compile-time information
 %as their method definitions grow more sophisticated.
@@ -716,23 +724,36 @@ overhead of tagging and dispatching removed where possible.
 \section{Conclusion}
 
 Programming languages must compromise between the ability to perform
-static analyses and allowing maximal flexbility of user programs. Performance-
+static analyses and allowing maximal flexbility in user programs. Performance-
 critical language features like arrays benefit greatly from static analyses,
-and so even dynamic languages that lack static analyses eventually want them
-one way or another.
+and so even dynamic languages that initially lack static analyses eventually
+want them one way or another.
 
-We believe that the combination of dataflow type inference and multiple
-dispatch is not merely an optimization hack, but instead can be used to design
-a programming language where they become core semantic features. The
-implementation of these features in Julia is a remarkably efficient way to
-allow code to be specialized to leverage static analyses for performance, yet
-at the same time allows for other code written for maximal flexibility even in
-the absence of detailed type information. Static analyzability becomes no
-longer a property of an entire language, but instead an optional property of
-specific programs in a particular language. Julia is therefore sufficiently
-expressive to write complex, generic, dynamic multidimensional behaviors, and
-more generally allows us to address the performance---flexibility compromise
-in Julia with greater Pareto optimality than other existing solutions.
+We speculate that, historically, computer scientists developing multiple dispatch
+were not thinking about technical computing, and those who cared about
+technical computing were not interested in the obscurer corners of object oriented
+programming. However we believe that the combination of dataflow type inference,
+sophisticated method signatures, and the need for high-productivity technical
+environments is explosive. In this context multi-methods, while still
+recognizable as such, can do work that departs significantly from familiar
+uses of operator overloading. By itself, this mechanism does not address
+many of the concerns of array programming, such as memory access order
+and parallelism. However, we feel it provides a useful increment of power
+to dynamic language users who would like to begin to tackle these and other
+related problems.
+
+%% multiple
+%% dispatch is not merely an optimization hack, but instead can be used to design
+%% a programming language where they become core semantic features. The
+%% implementation of these features in Julia is a remarkably efficient way to
+%% allow code to be specialized to leverage static analyses for performance, yet
+%% at the same time allows for other code written for maximal flexibility even in
+%% the absence of detailed type information. Static analyzability becomes no
+%% longer a property of an entire language, but instead an optional property of
+%% specific programs in a particular language. Julia is therefore sufficiently
+%% expressive to write complex, generic, dynamic multidimensional behaviors, and
+%% more generally allows us to address the performance---flexibility compromise
+%% in Julia with greater Pareto optimality than other existing solutions.
 
 %\appendix
 %\section{Appendix Title}
