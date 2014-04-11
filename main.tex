@@ -122,7 +122,7 @@ Notable examples include the C++ libraries
 leverage the static semantics of their host languages to
 define $n$-arrays inductively as the outer product of a 1-array with an
 $(n-1)$-array \cite{Bavestrelli:2000ct}.
-Array libraries typically handle dimensions recursively, one at a time; for arrays with ranks are known at compile time allow the compiler to infer the amount of storage needed for the shape information, and potentially unroll index computations fully.
+Array libraries typically handle dimensions recursively, one at a time; for arrays with ranks are known at compile-time allow the compiler to infer the amount of storage needed for the shape information, and potentially unroll index computations fully.
 
 %The dispatch semantics also allows for efficient
 %implementations of certain operations; for example, \code{Repa} allows for in-
@@ -132,10 +132,10 @@ Array libraries typically handle dimensions recursively, one at a time; for arra
 
 \subsection{Static tradeoffs}
 
-Array libraries built using compile time abstraction have good performance,
+Array libraries built using compile-time abstraction have good performance,
 but also some limitations.
-First, language features like C++ templates are not available at run time, so these
-libraries do not support $n$-arrays where $n$ is known only at run time.
+First, language features like C++ templates are not available at run-time, so these
+libraries do not support $n$-arrays where $n$ is known only at run-time.
 Second, code using these features is
 notoriously difficult to read and write; it is effectively written in a
 separate sublanguage.
@@ -157,7 +157,7 @@ community.
 
 Some applications call for semantics that are not amenable
 to static analysis. Certain applications require arrays whose ranks are known
-only at run time, and thus the data structures in these programs cannot be
+only at run-time, and thus the data structures in these programs cannot be
 guaranteed to fit in a constant amount of memory. Some programs may
 wish to dynamically dispatch on the rank of an array, a need which a
 library must anticipate by providing appropriate virtual methods.
@@ -173,7 +173,7 @@ library must anticipate by providing appropriate virtual methods.
 
 \subsection{Dynamic language approaches}
 
-Applications requiring run time flexibility are better expressed in
+Applications requiring run-time flexibility are better expressed in
 dynamic languages such as \Mathematica, \MATLAB, R, and Python/NumPy, where
 all operations are dynamically dispatched (at least semantically, if not
 in actual implementation). Such flexibility,
@@ -234,8 +234,8 @@ implementing arrays in an external library written in a static language.
   \includegraphics[width=\columnwidth]{fig-design-new}
   \caption{\label{fig:langdesign}
 Above: most dynamic languages are designed without consideration for program
-analysis, leaving this to others---future compiler writers and researchers---who
-step in if the language becomes popular enough to warrant it. 
+analysis, leaving the latter to future compiler writers to 
+step in if the language becomes sufficiently popular. 
 Below: Julia is designed with analysis in mind, with a single community responsible 
 for both language design and performant implementation. This approach is
 natural for statically typed languages, but dynamic languages need static analysis too.}
@@ -479,7 +479,7 @@ argument types, such a loop of course still must take place somewhere inside
 the dispatch system. Such a complex dispatch system is naturally at risk of
 performing badly. However, Julia pervasively applies dataflow type
 inference, so that argument types are often known in advance, in turn
-allowing method lookup to be done at compile time. Technically this is
+allowing method lookup to be done at compile-time. Technically this is
 just an optimization, but in practice it has a profound impact on how code
 is written.
 
@@ -519,8 +519,7 @@ index_shape(i, I...)    = tuple(length(i),
                                 index_shape(I...)...)
 \end{verbatim}
 }
-
-(The syntax \code{...} within an expression, on the right-hand side of
+(The \code{...} ellipsis syntax within an expression, on the right-hand side of
 a definition, performs ``argument splicing'': the elements of a container
 are spread into multiple arguments to the called function. Formal
 arguments that lack a \code{::} type specializer match any value.)
@@ -570,7 +569,7 @@ than a perversely slow way to implement the functionality. But with it, the
 definitions have the effect of ``forcing'' the analysis to deduce accurate
 types. In effect, such definitions are designed to exploit the dataflow
 operation of matching inferred argument types against method signatures,
-thereby destructuring and recurring through argument tuples at compile time.
+thereby destructuring and recurring through argument tuples at compile-time.
 
 Tuple types (or product types) are crucial to this analysis. Since the type
 of each element of a tuple is tracked, it is possible to deduce that
@@ -601,7 +600,7 @@ binding time. Semantically, methods always dispatch on run-time
 types, so the same definitions are applicable whether types are known
 statically or not. Initially, a programmer's intent may be for all types
 to be known statically. But if needs change and one day array rank needs
-to be a run time property, the same definitions still work (with the only
+to be a run-time property, the same definitions still work (with the only
 difference being that the compiler will generate a dynamic dispatch or
 two where there were none before). It is also possible to use popular
 dynamic constructs such as \code{A[I...]} where \code{I} is a heterogeneous
@@ -621,7 +620,7 @@ like \code{(Int...)} or \code{(Int,Int...)}).
 
 \subsection{Symbolic programming}
 
-Similarities to symbolic pattern-matching (as typically found in
+Similarities to symbolic pattern matching (as typically found in
 computer algebra systems) are readily apparent. These systems effectively
 allow dispatch on the full structure of values, and so are in some sense
 even more powerful than our generic functions. However, they lack a clear
@@ -724,7 +723,7 @@ A package providing unitful computations (\code{SIUnits.jl}\cite{Fischer:2014si}
 makes use of the same kinds of
 tradeoffs as array semantics. Unitful computations are another case
 where the relevent metadata (exponents on units) can be
-known at compile time in many cases, but not always. The
+known at compile-time in many cases, but not always. The
 \code{SIUnits} library is free to express the general case, and have the
 overhead of tagging and dispatching removed where possible.
 
@@ -733,23 +732,23 @@ overhead of tagging and dispatching removed where possible.
 \section{Conclusion}
 
 Programming languages must compromise between the ability to perform
-static analyses and allowing maximal flexbility in user programs. Performance-
-critical language features like arrays benefit greatly from static analyses,
-and so even dynamic languages that initially lack static analyses eventually
-want them one way or another.
+static analyses and allowing maximal flexbility in user programs.
+Performance-critical language features like arrays benefit greatly from
+static analyses, and so even dynamic languages that initially lack static
+analyses eventually want them one way or another.
 
-We speculate that, historically, computer scientists developing multiple dispatch
-were not thinking about technical computing, and those who cared about
-technical computing were not interested in the obscurer corners of object oriented
-programming. However we believe that the combination of dataflow type inference,
-sophisticated method signatures, and the need for high-productivity technical
-environments is explosive. In this context multi-methods, while still
-recognizable as such, can do work that departs significantly from familiar
-uses of operator overloading. By itself, this mechanism does not address
-many of the concerns of array programming, such as memory access order
-and parallelism. However, we feel it provides a useful increment of power
-to dynamic language users who would like to begin to tackle these and other
-related problems.
+We speculate that, historically, computer scientists developing multiple 
+dispatch were not thinking about technical computing, and those who cared
+about technical computing were not interested in the obscurer corners of
+object-oriented programming. However, we believe that the combination of
+dataflow type inference, sophisticated method signatures, and the need for
+high-productivity technical environments is explosive. In this context,
+multi-methods, while still recognizable as such, can do work that departs
+significantly from familiar uses of operator overloading. By itself, this
+mechanism does not address many of the concerns of array programming, such
+as memory access order and parallelism. However, we feel it provides a
+useful increment of power to dynamic language users who would like to begin
+to tackle these and other related problems.
 
 %% multiple
 %% dispatch is not merely an optimization hack, but instead can be used to design
