@@ -122,7 +122,7 @@ Notable examples include the C++ libraries
 leverage the static semantics of their host languages to
 define $n$-arrays inductively as the outer product of a 1-array with an
 $(n-1)$-array \cite{Bavestrelli:2000ct}.
-Array libraries typically handle dimensions recursively, one at a time; for arrays with ranks are known at compile-time allow the compiler to infer the amount of storage needed for the shape information, and potentially unroll index computations fully.
+Array libraries typically handle dimensions recursively, one at a time; arrays whose ranks are known at compile-time allow the compiler to infer the amount of storage needed for the shape information, and unroll index computations fully.
 
 %The dispatch semantics also allows for efficient
 %implementations of certain operations; for example, \code{Repa} allows for in-
@@ -243,84 +243,22 @@ natural for statically typed languages, but dynamic languages need static analys
 
 \section{Julia arrays}
 
-Julia is dynamically typed and is based on dynamic multiple dispatch.
-However, the language and its standard library have been designed to
-take advantage of the possibility of static analysis
-(Figure~\ref{fig:langdesign}), especially
-dataflow type inference. In this section we will describe some features
-of the array implementation that arise from this design decision.
+Julia\cite{Bezanson:2012jf} is dynamically typed and is based on dynamic
+multiple dispatch. However, the language and its standard library have been
+designed to take advantage of the possibility of static analysis
+(Figure~\ref{fig:langdesign}), especially dataflow type inference. Such type
+inference, when combined with multiple dispatch, allows users and library
+writers to produce a rich array of specialized methods to handle different
+cases performantly. In this section, we describe how features of array
+semantics can be implemented from multiple dispatch, as a core feature of the
+Julia language, is used to implement the \code{Array} data type, which is
+parameterized by an element type and a rank (an integer).For purposes of this
+paper, an \code{Array} can be considered a tuple of a contiguous memory region
+and a shape (a tuple of integers giving the size of the array in each
+dimension). This simple representation is already enough to require nontrivial
+design decisions.
 
-In this section, we describe how multiple dispatch, as a core feature of the Julia language\cite{Bezanson:2012jf}, is used to implement the \code{Array}
-data type, which is parameterized by an element type and a rank (an integer).\footnote{For purposes of this paper, an \code{Array} can be considered a tuple of
-a contiguous memory region and a shape (a tuple of integers giving the size
-of the array in each dimension). This simple representation is already
-enough to require nontrivial design decisions.} 
-
-%% Multiple dispatch makes it possible for \code{Array}s to have implementations
-%% that afford both generality and efficiency. The most general
-%% \code{Array\{Any\}} is an array of pointers to heap-allocated values. However,
-%% \code{Array}s of native machine types like double precision floating point
-%% numbers (\code{Float64}s) or integers of native machine size (\code{Int}s) can
-%% be implemented to be C/Fortran- compatible. Interestingly,
-%% \code{Array\{Nothing\}} can be implemented with zero storage space at runtime,
-%% since it consists of elements of an immutable type with zero fields, which is
-%% possible because only a single instance of any such type can exist, and hence
-%% need not actually be stored. This allows for some clever tricks like
-%% implementing \code{Set\{T\}} using a \code{Dict\{T,Nothing\}} to avoid paying
-%% any cost for the value array in the \code{Dict}.
-
-%TODO identify subthemes in this giant block
-%The implementation of Julia \code{Array}s differs significantly from other
-%languages in several important respects. First, automatic type inference is
-%not used merely as a compiler optimization technique, like in static compilers
-%for dynamic languages, but instead is a crucial language feature that, in
-%conjunction with multiple dispatch, are necessary for implement language
-%semantics. Second, Julia by virtue of being a dynamic language provides the
-%static analyses enabled by type inference and multiple dispatch at runtime. In
-%contrast, C++ templates are static semantics that are
-%unavailable at runtime, and the semantics of templates are for the purposes of
-%runtime programs effectively a separate language. The single all- runtime
-%model of Julia is much easier to use and imposes fewer restrictions on the
-%kind of Julia code that can be written.
-
-%You can implement a bigger class of
-%rules in Julia rather than having to special case on the number of dimensions
-%or be forced to rely on recursive definitions onto subarrays.
-
-%For example in
-%Julia you can do \code{A[I...]} where \code{I} is a heterogeneous array, and
-%all the same definitions are still applicable, but you might take a bit of
-%performance drop.
-
-%Third, Julia aggressive employs specialization on argument
-%types by default, generating a large variety of specialized methods for each
-%generic function, in contrast with the default of one compilation per function
-%declaration in most other languages. This is possible thanks to the static
-%analyses enabled by type inference and multiple dispatch. C++ can do this with
-%templates, but generating an entire family of related methods must be
-%requested explicitly using templates. Furthermore, having all the semantics
-%enabled by static analysis at runtime allows for composition for code that
-%results in efficient specialized methods by the compiler. For example, Julia
-%code implementing the algebra of the quaternion field can be composed
-%transparently with other Julia code implementing Gaussian elimination by the
-%compiler. One can be inlined into the other and woven into a specialized
-%method for Gaussian elimination on quaternionic matrices. Contrast this with
-%the conventional wisdom that user-defined types are slow in languages like
-%\MATLAB{} and
-
-%even C++; user-defined classes are reference types rather than
-%value types, and methods have to be declared \code{virtual} to enable dynamic
-%dispatch as opposed to the default static dispatch mechanism. In Julia,
-%everything in principle has to happen dynamically but then the focus is on
-%analyzing it statically.
-
-%Fourth, array functions in Julia have access to the
-%entire argument list, allowing for conceptual models and APIs that are not
-%restricted to strict left-to-right or right-to-left index traversal that would
-%be necessary by recursive peeling. Fifth, specialization of methods can be
-%implemented with multiple dispatch, which is a powerful alternative to the
-%single dispatch mechanism of Haskell based on function classes and pattern
-%matching.
+%relevant? Furthermore, the same mechanisms to generate performant code for arrays for native Julia types also extend to user-defined types, since they share the same semantics.
 
 %In the cases where static analysis can happen, Julia can perform as fast as
 %languages where array semantics is predicated on static analysis, but multiple
@@ -342,7 +280,7 @@ with scalars are dropped'', or ``trailing dimensions of size one are
 dropped'', or ``the rank of the result is the sum of the ranks of the
 indexes'' (as in APL).
 
-The recursive approach to array semantics that is favored in static languages often encourages a design decision that lends itself naturally to the semantic structure of the language. For example, an indexing expression
+The recursive, one-dimension-at-a-time approach favored in static languages limits which indexing behaviors can be chosen. For example, an indexing expression
 of a 3-array in C++ might be written as \code{A[i][j][k]}. Here there are 
 three applications of \code{operator[]}, each of which will decide whether or not to
 drop a dimension based on the type of a single index. The second rule
@@ -380,7 +318,7 @@ may be desirable to drop singleton dimensions. For example, a statistical
 computation may find it convenient to represent an $n$-point correlation
 function in an $n$-array, and integrate over $k$ points to generate the lower
 order $(n-k)$-correlation functions; the indistinguishability of the points
-means that the result is most conveniently expressed wirh rank $(n-k)$
+means that the result is most conveniently expressed with rank $(n-k)$
 rather than an $n$-array with $k$ singleton dimensions.
 
 %In linear algebra on the other hand, one might want a row or column of a
