@@ -234,6 +234,14 @@ implementing arrays in an external library written in a static language.
 
 %The user should not have to learn two different sets of semantic behavior. In Julia, that's the compiler's job. It does mean that the it's not as fast as a static language.
 
+%TODO need some words to connect to Figure~\ref{fig:langdesign}
+
+\begin{figure}
+  \caption{\label{fig:langdesign}Design of dynamic languages and their implementations: traditionally, dynamic languages were created by language designers before considerations of program analyses, which were left as follow-up details for implementation. In contrast, the Julia language is designed from the beginning to facilitate program analyses, with a single community responsible for both language design and implementation.}
+  \centering
+  \includegraphics[width=\columnwidth]{fig-langdesign}
+\end{figure}
+
 \section{Julia arrays}
 
 Julia is dynamically typed and is based on dynamic multiple dispatch.
@@ -397,12 +405,18 @@ should not be forced by technical limitations.
 
 \subsection{Multiple dispatch}
 
-Multiple dispatch (also known as generic functions, or multi-methods) is an
+As shown in Figure~\ref{fig:dispatch}, multiple dispatch (also known as generic functions, or multi-methods) is an
 object-oriented paradigm where methods are defined on combinations of data
 types (classes), instead of encapsulating methods inside classes. Methods are
 grouped into generic functions. A generic function can be applied to several
 arguments, and the method with the most specific signature matching the
 arguments is invoked.
+
+\begin{figure}
+  \caption{\label{fig:dispatch}Object-oriented method dispatch vs. multiple dispatch. Julia employs multiple dispatch to implement a wide variety of semantics.}
+  \centering
+  \includegraphics[width=\columnwidth]{fig-md-oo}
+\end{figure}
 
 One can invent examples where multiple dispatch is useful in classic OO domains
 such as GUI programming. A method for drawing a label onto a button might
