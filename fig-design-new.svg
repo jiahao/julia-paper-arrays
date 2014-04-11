@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 16.0.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="252px" height="57.6px" viewBox="0 0 252 57.6" enable-background="new 0 0 252 57.6" xml:space="preserve">
+<text transform="matrix(1 0 0 1 4.5 31.5)" fill="#121212" font-family="'MyriadHebrew-Regular'" font-size="12">language design</text>
+<text transform="matrix(1 0 0 1 173.25 31.5)" fill="#121212" font-family="'MyriadHebrew-Regular'" font-size="12">analysis design</text>
+<g>
+	
+		<ellipse fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" cx="98.17" cy="19.473" rx="3.67" ry="3.462"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="98.17" y1="22.935" x2="98.313" y2="33.553"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="98.17" y1="26.837" x2="94.5" y2="29.553"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="98.313" y1="33.553" x2="94.644" y2="36.27"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="102.02" y1="36.521" x2="98.351" y2="33.806"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="102.041" y1="29.805" x2="98.371" y2="27.089"/>
+</g>
+<g>
+	<g>
+		<path fill="none" stroke="#888A8A" stroke-linejoin="round" d="M80.771,39.438C86.909,47.858,106.331,54,129.375,54
+			C157.357,54,180,44.943,180,33.75"/>
+		<g>
+			<path fill="#888A8A" d="M78.75,33.75c0.042,3.028-0.364,6.964-1.352,9.688l3.815-3.32l5.055-0.111
+				C83.705,38.656,80.756,36.019,78.75,33.75z"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<path fill="none" stroke="#888A8A" stroke-linejoin="round" d="M177.979,16.812c-6.138-8.42-25.561-14.562-48.604-14.562
+			c-27.982,0-50.625,9.057-50.625,20.25"/>
+		<g>
+			<path fill="#888A8A" d="M180,22.5c-0.042-3.028,0.363-6.964,1.352-9.688l-3.814,3.32l-5.056,0.111
+				C175.046,17.594,177.993,20.231,180,22.5z"/>
+		</g>
+	</g>
+</g>
+<g>
+	
+		<ellipse fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" cx="113.92" cy="19.473" rx="3.67" ry="3.462"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="113.92" y1="22.935" x2="114.063" y2="33.553"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="113.92" y1="26.837" x2="110.25" y2="29.553"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="114.063" y1="33.553" x2="110.394" y2="36.27"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="117.77" y1="36.521" x2="114.101" y2="33.806"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="117.791" y1="29.805" x2="114.121" y2="27.089"/>
+</g>
+<g>
+	
+		<ellipse fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" cx="129.67" cy="19.212" rx="3.67" ry="3.462"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="129.67" y1="22.674" x2="129.813" y2="33.292"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="129.67" y1="26.576" x2="126" y2="29.292"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="129.813" y1="33.292" x2="126.144" y2="36.009"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="133.52" y1="36.261" x2="129.851" y2="33.545"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="133.541" y1="29.544" x2="129.871" y2="26.828"/>
+</g>
+<g>
+	
+		<ellipse fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" cx="144.629" cy="19.473" rx="3.67" ry="3.462"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="144.629" y1="22.935" x2="144.772" y2="33.553"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="144.629" y1="26.837" x2="140.959" y2="29.553"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="144.772" y1="33.553" x2="141.103" y2="36.27"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="148.479" y1="36.521" x2="144.81" y2="33.806"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="148.5" y1="29.805" x2="144.83" y2="27.089"/>
+</g>
+<g>
+	
+		<ellipse fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" cx="158.92" cy="19.212" rx="3.67" ry="3.462"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="158.92" y1="22.674" x2="159.063" y2="33.292"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="158.92" y1="26.576" x2="155.25" y2="29.292"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="159.063" y1="33.292" x2="155.394" y2="36.009"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="162.77" y1="36.261" x2="159.101" y2="33.545"/>
+	
+		<line fill="none" stroke="#020100" stroke-width="0.7419" stroke-linejoin="round" stroke-miterlimit="10" x1="162.791" y1="29.544" x2="159.121" y2="26.828"/>
+</g>
+</svg>

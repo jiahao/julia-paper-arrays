@@ -230,12 +230,13 @@ implementing arrays in an external library written in a static language.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\columnwidth]{fig-langdesign}
+  \includegraphics[width=\columnwidth]{fig-design-old}
+  \includegraphics[width=\columnwidth]{fig-design-new}
   \caption{\label{fig:langdesign}
-Most dynamic languages are designed without consideration for program
+Above: most dynamic languages are designed without consideration for program
 analysis, leaving this to others---future compiler writers and researchers---who
-step in if the language becomes popular enough to warrant it.
-Julia is designed with analysis in mind, with a single community responsible 
+step in if the language becomes popular enough to warrant it. 
+Below: Julia is designed with analysis in mind, with a single community responsible 
 for both language design and performant implementation. This approach is
 natural for statically typed languages, but dynamic languages need static analysis too.}
 \end{figure}
@@ -407,8 +408,9 @@ arguments is invoked.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\columnwidth]{fig-md-oo}
-  \caption{\label{fig:dispatch}Class-based method dispatch vs. multiple dispatch.}
+  \includegraphics[width=\columnwidth]{fig-dispatch-class}
+  \includegraphics[width=\columnwidth]{fig-dispatch-multiple}
+  \caption{\label{fig:dispatch}Class-based method dispatch (above) vs. multiple dispatch (below).}
 \end{figure}
 
 One can invent examples where multiple dispatch is useful in classic OO domains
