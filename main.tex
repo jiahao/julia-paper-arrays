@@ -604,6 +604,40 @@ doing this already, while also gaining data abstraction in the bargain.
 
 \section{Other applications}
 
+\begin{figure}
+\label{dispatchratios}
+\begin{center}
+\begin{tabular}{|l|r|r|}\hline
+Language & Dispatch ratio & Choice ratio \\
+\hline \hline
+Gwydion    & 1.74 & 18.27 \\
+\hline
+OpenDylan  & 2.51 & 43.84 \\
+\hline
+CMUCL      & 2.03 &  6.34 \\
+\hline
+SBCL       & 2.37 & 26.57 \\
+\hline
+McCLIM     & 2.32 & 15.43 \\
+\hline
+Vortex     & 2.33 & 63.30 \\
+\hline
+Whirlwind  & 2.07 & 31.65 \\
+\hline
+NiceC      & 1.36 &  3.46 \\
+\hline
+LocStack   & 1.50 &  8.92 \\
+\hline
+Julia      & 6.08 & 52.70 \\
+\hline
+\end{tabular}
+\end{center}
+\caption{
+Comparison of Julia (1132 functions exported from the \code{Base} library)
+to results for other multiple dispatch languages \cite{Muschevici:2008}.
+}
+\end{figure}
+
 Julia users have found many compelling applications of our multi-method
 paradigm.
 
