@@ -93,6 +93,8 @@ library.
 Julia, multiple dispatch, type inference, array indexing, static analysis,
 dynamic dispatch
 
+\section{Array libraries}
+
 \begin{quotation}
 ``Unfortunately, it is very difficult for a designer to select in advance all
 the abstractions which the users of his language might need. If a language is
@@ -100,8 +102,6 @@ to be used at all, it is likely to be used to solve problems which its
 designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
-
-\section{Array libraries}
 
 $n$-arrays (arrays of rank $n$, or simply `arrays') are an essential data
 structure for technical computing, but are challenging to implement
@@ -114,15 +114,17 @@ semantics into compilers.
 
 However, only a few of the languages that support $n$-arrays have sufficient
 power to express the semantics of $n$-arrays for general rank $n$ without
-resorting to hard coding array behavior into a compiler.
-These languages support efficient libraries
-implementing array semantics. Notable examples include the C++ libraries
+resorting to hard-coding array behavior into a compiler.
+Notable examples include C++, with libraries like
 \code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
-\cite{Garcia:2005ma}, and the Haskell Repa (Regular Parallel Arrays) library
+\cite{Garcia:2005ma}, and Haskell's Repa (Regular Parallel Arrays)
 \cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries
-leverage the static semantics of their host langangues to
+leverage the static semantics of their host languages to
 define $n$-arrays inductively as the outer product of a 1-array with an
 $(n-1)$-array \cite{Bavestrelli:2000ct}.
+A common pattern in such libraries is to handle dimensions one at a time,
+recursively, so the compiler can understand each step.
+
 
 %This recursive peeling of rank thus
 %defines general $n$-arrays. The dispatch semantics also allows for efficient
@@ -131,44 +133,50 @@ $(n-1)$-array \cite{Bavestrelli:2000ct}.
 %rules \cite{Keller:2010rs}. The use of compile-time features allows these
 %libraries to eliminate runtime overhead for better performance.
 
-\subsection{Static vs dynamic}
+\subsection{Static tradeoffs}
 
-Statically defined array libraries, despite their notable advantages,
-nevertheless still have some limitations. First, the language semantics
-required to achieve the necessary flexibility of expression and performance,
-such as C++ templates, are only available at compile time.
-Consequently, these libraries would not be able to support programs using
-$n$-arrays where $n$ is known only at runtime.
-Second, code using compile-time features like C++ templates is
+Array libraries built using compile-time abstraction, despite their good
+performance, nevertheless have some limitations.
+First, features like C++ templates are not available at run time, so these
+libraries do not support $n$-arrays where $n$ is known only at run time.
+Second, code using these features is
 notoriously difficult to read and write; it is effectively written in a
 separate sub-language.
-Third, the recursive peeling strategy for defining $n$-arrays
-naturally favors only a limited set of indexing behaviors. For example,
-\code{Repa}'s reductions like \code{Sum} are only defined naturally over the
-last index \cite{Keller:2010rs}; computations over other indices require extra
-permutation operations and are not guaranteed to produce an optimal memory
-traversal pattern. The overhead incurred by general indexing operations can be
-avoided only by implementing many special cases that ensure maximal
-exploitation of loop unrolling optimizations and other similar static analyses
-\cite{Garcia:2005ma, Lippmeier:2011ep}, which engenders much repetition in the
-codebase \cite{Lippmeier:2012gp}.
+Third, the recursive strategy for defining $n$-arrays
+naturally favors only certain indexing behaviors. For example,
+\code{Repa}'s reductions like \code{sum} are only defined naturally over the
+last index \cite{Keller:2010rs}; reducing over a different index requires
+a permutation.
+However, it is worth noting that Haskell's type system encourages
+elegant factoring of abstractions. While the syntax may be unfamiliar,
+we feel \code{Repa} ought to hold much interest for the technical computing
+community.
+%permutation operations and are not guaranteed to produce an optimal memory
+%traversal pattern. The overhead incurred by general indexing operations can be
+%avoided only by implementing many special cases that ensure maximal
+%exploitation of loop unrolling optimizations and other similar static analyses
+%\cite{Garcia:2005ma, Lippmeier:2011ep}, which engenders much repetition in the
+%codebase \cite{Lippmeier:2012gp}.
 
-More importantly, some applications call for semantics that are not amenable
+Some applications call for semantics that are not amenable
 to static analysis. Certain applications require arrays whose ranks are known
-only at runtime, and thus the data structures in these program cannot be
-guaranteed to fit in a constant amount of memory. Other programs may require
-different semantics for arrays of different ranks. Some technical computing
-applications, for example, wish to treat vectors (1-arrays) differently from
-matrices (2-arrays), supporting computations such as the singular value
-decomposition for the latter but not the former. In such contexts, column
-vectors are no longer equivalent to $N\times1$ matrices or 2-arrays with a
-trailing singleton dimension, and programs that conflate them violate the
-Liskov substitution principle \cite{Liskov:1987da}, in ways are are analogous
-to the canonical circle-ellipse problem \cite{Halbert:1987ut}.
+only at run time, and thus the data structures in these programs cannot be
+guaranteed to fit in a constant amount of memory. Some programs may
+wish to dynamically dispatch on the rank of an array, a need which a
+library must anticipate by providing appropriate virtual methods.
 
-\subsection{Dynamic languages}
+%different semantics for arrays of different ranks. Some technical computing
+%applications, for example, wish to treat vectors (1-arrays) differently from
+%matrices (2-arrays), supporting computations such as the singular value
+%decomposition for the latter but not the former. In such contexts, column
+%vectors are no longer equivalent to $N\times1$ matrices or 2-arrays with a
+%trailing singleton dimension, and programs that conflate them violate the
+%Liskov substitution principle \cite{Liskov:1987da}, in ways are are analogous
+%to the canonical circle-ellipse problem \cite{Halbert:1987ut}.
 
-Applications requiring full runtime flexibility are better expressed in
+\subsection{Dynamic language approaches}
+
+Applications requiring run time flexibility are better expressed in
 dynamic languages such as \Mathematica, \MATLAB, R, and Python/NumPy, where
 all operations are dynamically dispatched (at least semantically, if not
 in actual implementation). Such flexibility,
@@ -182,11 +190,11 @@ as well as its own type system and internal abstraction mechanisms within
 a large C code base. As a result, NumPy \code{ndarray}s are
 superficially Python objects, but implementation-wise are disjoint from the
 rest of the Python object system, since little of Python's native object
-semantics are used to define their behavior.
+semantics is used to define their behavior.
 
 Another approach is to implement static analyses
 \textit{de novo} for dynamic languages. However, the flexibility
-of arbitrary programs limits the extent of analysis that is
+of these languages' programs limits the extent of analysis that is
 realistically possible. For example, \MATLAB's array
 semantics allow an array to be enlarged automatically whenever a write occurs
 to an out-of-bounds index, and also for certain operations to
@@ -194,8 +202,8 @@ automatically promote the element type of an array from real to complex
 numbers. This poses implementation challenges for static \MATLAB{} compilers
 like \code{FALCON}, which have to implement a complete type system with
 multiple compiler passes and interprocedural flow analyses to check
-specifically for such drastic runtime changes to arrays \cite{Rose:1999tt,
-Li:2013mf}. Additionally, type checking was essential to disambiguate
+for such drastic changes to arrays \cite{Rose:1999tt,
+Li:2013mf}. Additionally, type checking is essential to disambiguate
 \MATLAB{} expressions like \code{A*B}, which, depending on the dimensions of
 \code{A} and \code{B}, could represent a scaling, inner product, outer
 product, matrix-matrix multiplication, or matrix-vector multiplication
@@ -208,25 +216,29 @@ as in Hack, a PHP implementation with a full static type system
 The conflicting requirements of performance and flexibility pose a dilemma for
 language designers and implementers. Most current languages choose either to
 support only programs that are amenable to static analysis for the sake of
-performance, such as C++ and Haskell, or choose to support more general
-classes of programs, like \MATLAB, \Mathematica, Python/NumPy, and APL. While
+performance, like C++ and Haskell, or choose to support more general
+classes of programs, like \MATLAB, \Mathematica, and Python/NumPy. While
 dynamic languages nominally give up static analysis in the process, many
 implementations of these languages still resort to static analysis in
-practice, either by hard-coding array semantics in a compiler, or by
-implementing arrays in an external library written in a static language. Thus
-we see that having some modicum of static analysis is unavoidable for
-reasonable performance.
+practice, either by hard-coding array semantics in a post-hoc compiler, or by
+implementing arrays in an external library written in a static language.
 
-A key problem with dynamic languages is how to provide more declarative
-information to a compiler. Users expect to be able to program any
-run-time behavior and have it just work. In theory, a compiler could
-partially evaluate programs based on whatever static information it can
-find (e.g. integer constants), but it is unlikely that this would reliably
-provide performance where it is needed.
+%A key problem with dynamic languages is how to provide more declarative
+%information to a compiler. Users expect to be able to program any
+%run-time behavior and have it just work. In theory, a compiler could
+%partially evaluate programs based on whatever static information it can
+%find (e.g. integer constants), but it is unlikely that this would reliably
+%provide performance where it is needed.
 
 %The user should not have to learn two different sets of semantic behavior. In Julia, that's the compiler's job. It does mean that the it's not as fast as a static language.
 
 \section{Julia arrays}
+
+Julia is dynamically typed and is based on dynamic multiple dispatch.
+However, the language (and its standard library) have been designed to
+take advantage of the possibility of static analysis, especially
+dataflow type inference. In this section we will describe some features
+of the array implementation that arise from this design decision.
 
 Arrays are implemented in Julia\cite{Bezanson:2012jf} as the \code{Array}
 data type, which is parameterized by an element type and a rank (an integer).
@@ -328,25 +340,33 @@ indexes'' (as in APL).
 %In Julia, such indexing rules are defined in exactly one place and can be
 %changed later if so desired.
 
-\subsubsection{The need for flexibility in array indexing rules}
+\subsection{The need for flexibility}
 
 Our goal here is a bit unusual: we are not concerned with which rules might
 work best, but merely with how they can be specified, so that domain experts
 can experiment.
 
-In fact different domains want different things. E.g. in images, each
+In fact different domains want different things. In image processing for
+example, each
 dimension might be quite different, e.g. time vs. space vs. color, so you
-don't want to drop or rearrange dimensions too often.
+don't want to drop or rearrange dimensions too often. In linear algebra on
+the other hand,
+one might want a row or column of a matrix to become a vector by dropping
+a dimension.
 
 In practice we may have to reach a consensus on what rules to use, but this
-should not be forced by pure implementation convenience.
-In Julia, these are not enforced a priori. Sometimes the
-distinctions between the various indexing rules are semantically meaningful
-and that's when this flexibility becomes particularly valuable. For example
-Tim Holy's image 4-arrays. Quantum mechanics when you average out multiple
-indistinguishable particles. $n$-point correlations functions where which $k$
-indices you average out defines any number of lower-point $n-k$ point
-correlation functions.
+should not be forced by technical limitations.
+
+%% (jeff says) TODO: these look like good examples but I don't know enough about
+%% them to flesh this out.
+%In Julia, these are not enforced a priori. Sometimes the
+%distinctions between the various indexing rules are semantically meaningful
+%and that's when this flexibility becomes particularly valuable. For example
+%Tim Holy's image 4-arrays. Quantum mechanics when you average out multiple
+%indistinguishable particles. $n$-point correlations functions where which $k$
+%indices you average out defines any number of lower-point $n-k$ point
+%correlation functions.
+
 
 %% Instead of the compiler analyzing indexing expressions and determining an
 %% answer using hard-coded logic, we would rather implement the behavior in
@@ -481,7 +501,8 @@ The following two method definitions express this behavior:
 \begin{verbatim}
 # drop trailing dimensions indexed with scalars
 index_shape(i::Real...) = ()
-index_shape(i, I...)    = tuple(length(i), index_shape(I...)...)
+index_shape(i, I...)    = tuple(length(i),
+                                index_shape(I...)...)
 \end{verbatim}
 }
 
@@ -502,7 +523,8 @@ want is to drop \emph{all} dimensions indexed with scalars:
 # drop dimensions indexed with scalars
 index_shape()              = ()
 index_shape(i::Real, I...) = index_shape(I...)
-index_shape(i, I...)       = tuple(length(i), index_shape(I...)...)
+index_shape(i, I...)       = tuple(length(i),
+                                   index_shape(I...)...)
 \end{verbatim}
 }
 
@@ -513,7 +535,8 @@ of the ranks of the indexes, as follows:
 \begin{verbatim}
 # rank summing (APL)
 index_shape()        = ()
-index_shape(i, I...) = tuple(size(i)..., index_shape(I...)...)
+index_shape(i, I...) = tuple(size(i)...,
+                             index_shape(I...)...)
 \end{verbatim}
 }
 
@@ -524,7 +547,7 @@ so we are just concatenating shapes.
 \subsection{Why it works}
 
 Julia's multi-methods were designed with the idea that dataflow type inference
-\cite{Cousot:1977} \cite{kaplanullman}
+\cite{Cousot:1977, kaplanullman}
 would be applied to almost all concrete instances of methods, based on
 run-time argument types or compile-time estimated argument types. Without this
 piece of infrastructure, definitions like those above might be no more
@@ -533,6 +556,18 @@ definitions have the effect of ``forcing'' the analysis to deduce accurate
 types. In effect, such definitions are designed to exploit the dataflow
 operation of matching inferred argument types against method signatures,
 thereby destructuring and recurring through argument tuples at compile time.
+
+Tuple types (or product types) are crucial to this analysis. Since the type
+of each element of a tuple is tracked, it is possible to deduce that
+the type of \code{f(x...)}, where \code{x} has tuple type \code{(A,B)}, is
+equal to the type of \code{f} applied to arguments of types \code{A} and
+\code{B}. Variadic methods introduce unbounded tuple types, written as
+\code{(T...)}. Unbounded tuple types form a lattice of infinite height,
+since new subtypes can always be constructed in the sequence
+\code{(T...)}, \code{(T,T...)}, \code{(T,T,T...)}, etc. This adds
+significant complexity to our lattice operators.
+
+\subsection{Implications}
 
 In a language with de-coupled design and analysis passes, a function like
 \code{index\_shape} would be implemented inside the run-time system
@@ -549,14 +584,19 @@ mechanism. Having learned Julia's ``object'' system, one has also learned
 its ``template'' system, without different syntax or reasoning about
 binding time. Semantically, methods always dispatch on run-time
 types, so the same definitions are applicable whether types are known
-statically or not. Therefore users are free to reason about
-programs operationally, while gaining richer compile-time information
-as their method definitions grow more sophisticated.
+statically or not. Initially, a programmer's intent may be for all types
+to be known statically. But if needs change and one day array rank needs
+to be a run time property, the same definitions still work (with the only
+difference being that the compiler will generate a dynamic dispatch or
+two where there were none before).
+%Therefore users are free to reason about
+%programs operationally, while gaining richer compile-time information
+%as their method definitions grow more sophisticated.
 
 One price of this flexibility is that not all such definitions are well-founded:
 it is possible to write methods that yield tuples of indeterminate length.
 The compiler must recognize this condition and apply widening operators
-\cite{Cousot:1977} \cite{widening}. In these cases, the deduced types are
+\cite{Cousot:1977, widening}. In these cases, the deduced types are
 still correct but imprecise, and in a way that depends on somewhat arbitrary
 choices of widening operators (for example, such a type might look
 like \code{(Int...)} or \code{(Int,Int...)}).
@@ -572,17 +612,16 @@ separation between the type and value domains, leading to performance
 opacity: it is not clear what the system will be able to optimize
 effectively and what it won't.
 
+This could potentially be addressed by
+designating some class of patterns as the ``types'' that the compiler
+will analyze. However, more traditional type systems could be seen as
+doing this already, while also gaining data abstraction in the bargain.
+
 %TODO: point out how this combines the ``object part'' and the ``array part''
 %into a coherent whole.
 %This is really a statement about implementing array semantics in language X
 %using language X itself, and in particular using intrinsic features for handling
 %objects to also handle arrays.
-
-%The result type is determined using only dataflow type inference, plus a rule
-%for splicing an immediate container (the type of \texttt{f((a,b)...)} is the
-%type of \texttt{f(a,b)}). Argument list destructuring takes place inside the
-%type intersection operator used to combine argument types with method
-%signatures.
 
 %This approach does not depend on any heuristics. Each call to
 %\texttt{index\_shape} simply requires one recursive invocation of type
@@ -628,9 +667,11 @@ This determination is made by a definition similar to the following:
 
 {\small
 \begin{verbatim}
-view(a::DenseArray, I::Subs...) =
-    (shp = vshape(a, I...);
-     make_view(a, restrict_crank(contrank(a, I...), shp), shp, I...))
+function view(a::DenseArray, I::Subs...)
+    shp = vshape(a, I...)
+    make_view(a, restrict_crank(contrank(a, I...), shp),
+              shp, I...)
+end
 \end{verbatim}
 }
 
@@ -644,7 +685,7 @@ actually exceeding the complexity of what is provided in the standard library.
 \subsection{Distributed arrays}
 
 Other classes of array indexing rules are needed in distributed array
-implementations. The Star-P system \cite{parry} \cite{Choy05parallelmatlab}
+implementations. The Star-P system \cite{parry, Choy05parallelmatlab}
 let users ``tag'' dimensions as potentially distributed using the notation
 \code{*p}, which constructed a special type of object tracked by the system.
 Indexing leads to questions of whether to take the first instance of \code{*p}
@@ -674,14 +715,13 @@ overhead of tagging and dispatching removed where possible.
 
 \section{Conclusion}
 
-Well-designed programming languages compromise between the ability to perform
+Programming languages must compromise between the ability to perform
 static analyses and allowing maximal flexbility of user programs. Performance-
 critical language features like arrays benefit greatly from static analyses,
-and so even dynamic languages that lack static analyses want them one way ot
-the other, either by implementing features into the compiler, or in elaborate
-external libraries.
+and so even dynamic languages that lack static analyses eventually want them
+one way or another.
 
-We believe that the combination of automatic type inference and multiple
+We believe that the combination of dataflow type inference and multiple
 dispatch is not merely an optimization hack, but instead can be used to design
 a programming language where they become core semantic features. The
 implementation of these features in Julia is a remarkably efficient way to
@@ -692,8 +732,7 @@ longer a property of an entire language, but instead an optional property of
 specific programs in a particular language. Julia is therefore sufficiently
 expressive to write complex, generic, dynamic multidimensional behaviors, and
 more generally allows us to address the performance---flexibility compromise
-in Julia with greater Pareto optimality than other existing solutions to this
-trade-off.
+in Julia with greater Pareto optimality than other existing solutions.
 
 %\appendix
 %\section{Appendix Title}
