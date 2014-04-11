@@ -101,7 +101,7 @@ designer did not envision, and for which abstractions embedded in the language
 are not sufficient.'' - Ref. \cite{Liskov:1974pb}
 \end{quotation}
 
-\section{Static analysis is necessary for efficient array implementations}
+\section{Array libraries}
 
 $n$-arrays (arrays of rank $n$, or simply `arrays') are an essential data
 structure for technical computing, but are challenging to implement
@@ -115,19 +115,23 @@ semantics into compilers.
 However, only a few of the languages that support $n$-arrays have sufficient
 power to express the semantics of $n$-arrays for general rank $n$ without
 resorting to hard coding array behavior into a compiler.
-These languages support powerful and efficient libraries
-implementing array semantics. Notable examples  include the C++ libraries
+These languages support efficient libraries
+implementing array semantics. Notable examples include the C++ libraries
 \code{Blitz++} \cite{Veldhuizen:1998ab} or \code{Boost.MultiArray}
 \cite{Garcia:2005ma}, and the Haskell Repa (Regular Parallel Arrays) library
-\cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries, at
-their core, leverage powerful static semantics of their host langangues to
+\cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries
+leverage the static semantics of their host langangues to
 define $n$-arrays inductively as the outer product of a 1-array with an
-$(n-1)$-array \cite{Bavestrelli:2000ct}. This recursive peeling of rank thus
-defines general $n$-arrays. The dispatch semantics also allows for efficient
-implementations of certain operations; for example, \code{Repa} allows for in-
-memory transposition by dispatching on classes with different memory striding
-rules \cite{Keller:2010rs}. The use of compile-time features allows these
-libraries to eliminate runtime overhead for better performance.
+$(n-1)$-array \cite{Bavestrelli:2000ct}.
+
+%This recursive peeling of rank thus
+%defines general $n$-arrays. The dispatch semantics also allows for efficient
+%implementations of certain operations; for example, \code{Repa} allows for in-
+%memory transposition by dispatching on classes with different memory striding
+%rules \cite{Keller:2010rs}. The use of compile-time features allows these
+%libraries to eliminate runtime overhead for better performance.
+
+\subsection{Static vs dynamic}
 
 Statically defined array libraries, despite their notable advantages,
 nevertheless still have some limitations. First, the language semantics
@@ -161,6 +165,8 @@ vectors are no longer equivalent to $N\times1$ matrices or 2-arrays with a
 trailing singleton dimension, and programs that conflate them violate the
 Liskov substitution principle \cite{Liskov:1987da}, in ways are are analogous
 to the canonical circle-ellipse problem \cite{Halbert:1987ut}.
+
+\subsection{Dynamic languages}
 
 Applications requiring full runtime flexibility are better expressed in
 dynamic languages such as \Mathematica, \MATLAB, R, and Python/NumPy, where
@@ -220,7 +226,7 @@ provide performance where it is needed.
 
 %The user should not have to learn two different sets of semantic behavior. In Julia, that's the compiler's job. It does mean that the it's not as fast as a static language.
 
-\section{Julia Arrays}
+\section{Julia arrays}
 
 Arrays are implemented in Julia\cite{Bezanson:2012jf} as the \code{Array}
 data type, which is parameterized by an element type and a rank (an integer).
@@ -243,60 +249,70 @@ enough to require nontrivial design decisions.
 %% any cost for the value array in the \code{Dict}.
 
 %TODO identify subthemes in this giant block
-The implementation of Julia \code{Array}s differs significantly from other
-languages in several important respects. First, automatic type inference is
-not used merely as a compiler optimization technique, like in static compilers
-for dynamic languages, but instead is a crucial language feature that, in
-conjunction with multiple dispatch, are necessary for implement language
-semantics. Second, Julia by virtue of being a dynamic language provides the
-static analyses enabled by type inference and multiple dispatch at runtime. In
-contrast, C++ templates are static semantics that are
-unavailable at runtime, and the semantics of templates are for the purposes of
-runtime programs effectively a separate language. The single all- runtime
-model of Julia is much easier to use and imposes fewer restrictions on the
-kind of Julia code that can be written. You can implement a bigger class of
-rules in Julia rather than having to special case on the number of dimensions
-or be forced to rely on recursive definitions onto subarrays. For example in
-Julia you can do \code{A[I...]} where \code{I} is a heterogeneous array, and
-all the same definitions are still applicable, but you might take a bit of
-performance drop. Third, Julia aggressive employs specialization on argument
-types by default, generating a large variety of specialized methods for each
-generic function, in contrast with the default of one compilation per function
-declaration in most other languages. This is possible thanks to the static
-analyses enabled by type inference and multiple dispatch. C++ can do this with
-templates, but generating an entire family of related methods must be
-requested explicitly using templates. Furthermore, having all the semantics
-enabled by static analysis at runtime allows for composition for code that
-results in efficient specialized methods by the compiler. For example, Julia
-code implementing the algebra of the quaternion field can be composed
-transparently with other Julia code implementing Gaussian elimination by the
-compiler. One can be inlined into the other and woven into a specialized
-method for Gaussian elimination on quaternionic matrices. Contrast this with
-the conventional wisdom that user-defined types are slow in languages like
-\MATLAB{} and even C++; user-defined classes are reference types rather than
-value types, and methods have to be declared \code{virtual} to enable dynamic
-dispatch as opposed to the default static dispatch mechanism. In Julia,
-everything in principle has to happen dynamically but then the focus is on
-analyzing it statically. Fourth, array functions in Julia have access to the
-entire argument list, allowing for conceptual models and APIs that are not
-restricted to strict left-to-right or right-to-left index traversal that would
-be necessary by recursive peeling. Fifth, specialization of methods can be
-implemented with multiple dispatch, which is a powerful alternative to the
-single dispatch mechanism of Haskell based on function classes and pattern
-matching.
+%The implementation of Julia \code{Array}s differs significantly from other
+%languages in several important respects. First, automatic type inference is
+%not used merely as a compiler optimization technique, like in static compilers
+%for dynamic languages, but instead is a crucial language feature that, in
+%conjunction with multiple dispatch, are necessary for implement language
+%semantics. Second, Julia by virtue of being a dynamic language provides the
+%static analyses enabled by type inference and multiple dispatch at runtime. In
+%contrast, C++ templates are static semantics that are
+%unavailable at runtime, and the semantics of templates are for the purposes of
+%runtime programs effectively a separate language. The single all- runtime
+%model of Julia is much easier to use and imposes fewer restrictions on the
+%kind of Julia code that can be written.
 
-In the cases where static analysis can happen, Julia can perform as fast as
-languages where array semantics is predicated on static analysis, but multiple
-dispatch allows Julia to be more flexible than just this. Julia also allows
-for generic fall-back methods that are slower because of a lack of static
-analysis, but nonetheless can be dispatched upon. The flexibility that is
-allowed by this approach is a nonobvious application of multiple
-dispatch.
+%You can implement a bigger class of
+%rules in Julia rather than having to special case on the number of dimensions
+%or be forced to rely on recursive definitions onto subarrays.
+
+%For example in
+%Julia you can do \code{A[I...]} where \code{I} is a heterogeneous array, and
+%all the same definitions are still applicable, but you might take a bit of
+%performance drop.
+
+%Third, Julia aggressive employs specialization on argument
+%types by default, generating a large variety of specialized methods for each
+%generic function, in contrast with the default of one compilation per function
+%declaration in most other languages. This is possible thanks to the static
+%analyses enabled by type inference and multiple dispatch. C++ can do this with
+%templates, but generating an entire family of related methods must be
+%requested explicitly using templates. Furthermore, having all the semantics
+%enabled by static analysis at runtime allows for composition for code that
+%results in efficient specialized methods by the compiler. For example, Julia
+%code implementing the algebra of the quaternion field can be composed
+%transparently with other Julia code implementing Gaussian elimination by the
+%compiler. One can be inlined into the other and woven into a specialized
+%method for Gaussian elimination on quaternionic matrices. Contrast this with
+%the conventional wisdom that user-defined types are slow in languages like
+%\MATLAB{} and
+
+%even C++; user-defined classes are reference types rather than
+%value types, and methods have to be declared \code{virtual} to enable dynamic
+%dispatch as opposed to the default static dispatch mechanism. In Julia,
+%everything in principle has to happen dynamically but then the focus is on
+%analyzing it statically.
+
+%Fourth, array functions in Julia have access to the
+%entire argument list, allowing for conceptual models and APIs that are not
+%restricted to strict left-to-right or right-to-left index traversal that would
+%be necessary by recursive peeling. Fifth, specialization of methods can be
+%implemented with multiple dispatch, which is a powerful alternative to the
+%single dispatch mechanism of Haskell based on function classes and pattern
+%matching.
+
+%In the cases where static analysis can happen, Julia can perform as fast as
+%languages where array semantics is predicated on static analysis, but multiple
+%dispatch allows Julia to be more flexible than just this. Julia also allows
+%for generic fall-back methods that are slower because of a lack of static
+%analysis, but nonetheless can be dispatched upon. The flexibility that is
+%allowed by this approach is a nonobvious application of multiple
+%dispatch.
 
 \subsection{Array indexing rules}
 
-Whatever decision is made, rules must be defined for how various operators act
-on dimensions. For now we will focus on indexing, since selecting parts of
+Rules must be defined for how various operators act
+on array dimensions. Here we will focus on indexing, since selecting parts of
 arrays has particularly rich behavior with respect to dimensionality. For
 example, if a single row or column of a matrix is selected, does the result
 have one or two dimensions? Array implementations prefer to invoke general
@@ -305,12 +321,12 @@ with scalars are dropped'', or ``trailing dimensions of size one are
 dropped'', or ``the rank of the result is the sum of the ranks of the
 indexes'' (as in APL).
 
-Here we consider the indexing rules. How to compute shapes of subarrays. How
-to deal with singleton dimensions is but a special case even though
-superficially the rules mention them explicitly.
+%Here we consider the indexing rules. How to compute shapes of subarrays. How
+%to deal with singleton dimensions is but a special case even though
+%superficially the rules mention them explicitly.
 
-In Julia, such indexing rules are defined in exactly one place and can be
-changed later if so desired.
+%In Julia, such indexing rules are defined in exactly one place and can be
+%changed later if so desired.
 
 \subsubsection{The need for flexibility in array indexing rules}
 
@@ -324,7 +340,7 @@ don't want to drop or rearrange dimensions too often.
 
 In practice we may have to reach a consensus on what rules to use, but this
 should not be forced by pure implementation convenience.
-The point is that in Julia, these are not enforced a priori. Sometimes the
+In Julia, these are not enforced a priori. Sometimes the
 distinctions between the various indexing rules are semantically meaningful
 and that's when this flexibility becomes particularly valuable. For example
 Tim Holy's image 4-arrays. Quantum mechanics when you average out multiple
@@ -340,11 +356,11 @@ correlation functions.
 %% writes out its indexing logic using imperative code, the host language
 %% compiler is not likely to be able to analyze it.
 
-Why is it important to be able to express this in a library? No hidden
-theories, some sort of consistency. Another reason is heuristic, don't really
-know what people want in the future. Put in what people know now, hope that
-the next generation will still have the flexibility to modify it to their
-needs.
+%Why is it important to be able to express this in a library? No hidden
+%theories, some sort of consistency. Another reason is heuristic, don't really
+%know what people want in the future. Put in what people know now, hope that
+%the next generation will still have the flexibility to modify it to their
+%needs.
 
 Our dispatch mechanism permits a novel solution. If a multiple dispatch system
 supports variadic functions and argument ``splicing'' (the ability to pass a
@@ -352,11 +368,9 @@ structure of $n$ values as $n$ separate arguments to a function), then
 indexing behavior can be defined as method signatures.
 
 This solution is still a compromise among the factors outlined above, but it
-is a new compromise that provides a net-better solution.
+is a new compromise that we find compelling.
 
-%TODO more
-
-\section{Multiple dispatch}
+\subsection{Multiple dispatch}
 
 Multiple dispatch (also known as generic functions, or multi-methods) is an
 object-oriented paradigm where methods are defined on combinations of data
@@ -547,6 +561,7 @@ still correct but imprecise, and in a way that depends on somewhat arbitrary
 choices of widening operators (for example, such a type might look
 like \code{(Int...)} or \code{(Int,Int...)}).
 
+
 \subsection{Symbolic programming}
 
 Similarities to symbolic pattern-matching (as typically found in
@@ -626,37 +641,26 @@ set up to return the smaller of its two argument shapes.
 This is an excellent example of a library that needs to define behaviors
 actually exceeding the complexity of what is provided in the standard library.
 
-%\subsection{Distributed Arrays}
+\subsection{Distributed arrays}
 
-Though not yet tested, an intriguing thought is that distributed array distribution
-rules can make use of the same approach as general array semantics.
-An interesting example is the  *p syntax used in Star-P. \cite{}
+Other classes of array indexing rules are needed in distributed array
+implementations. The Star-P system \cite{parry} \cite{Choy05parallelmatlab}
+let users ``tag'' dimensions as potentially distributed using the notation
+\code{*p}, which constructed a special type of object tracked by the system.
+Indexing leads to questions of whether to take the first instance of \code{*p}
+as the distributed dimension, the last instance, or perhaps just the last dimension.
 
-%%
-% References: 
-%@INPROCEEDINGS{Choy05parallelmatlab:,
- %   author = {Ron Choy and Alan Edelman },
-   % title = {Parallel MATLAB: Doing it right},
-   % booktitle = {Proceedings of the IEEE},
-%    year = {2005},
-%    pages = {331--341}
-%}
+Such distribution rules could be implemented and experimented with readily
+using an approach similar to that used for \code{index\_shape}.
 
-%Husbands, P.J.R. 1999. Interactive Supercomputing. PhD Thesis, Department of Electrical Engineering and Computer Science, Massachusetts Institute of Technology.
-
-
-
-In this syntax, array dimensions were listed as parallel with the *p notation.  Indexing
-lead to questions of whether to take the first instance of *p as the  parallel dimension,
-the last instance of *p, or perhaps the final dimension.
-
-Julia multiple dispatch syntax provides the flexibility to explore the myriad of choices readily and flexibly.
+%Though not yet tested, an intriguing thought is that distributed array distribution
+%rules can make use of the same approach as general array semantics.
+%An interesting example is the  *p syntax used in Star-P. \cite{}
+%In this syntax, array dimensions were listed as parallel with the *p notation.
+%Julia multiple dispatch syntax provides the flexibility to explore the myriad of choices readily and flexibly.
 
 
-
-
-
-\subsection{Quantities with Units}
+\subsection{Unit quantities}
 
 A package providing unitful computations (\code{SIUnits.jl}\cite{Fischer:2014si})
 makes use of the same kinds of
@@ -668,7 +672,7 @@ overhead of tagging and dispatching removed where possible.
 
 
 
-\section{Conclusions}
+\section{Conclusion}
 
 Well-designed programming languages compromise between the ability to perform
 static analyses and allowing maximal flexbility of user programs. Performance-
