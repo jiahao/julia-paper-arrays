@@ -393,7 +393,7 @@ Python's \code{\_\_add\_\_} and \code{\_\_radd\_\_} methods.
 However, multiple dispatch looks quite different in the context of technical
 computing. To a large extent, technical computing is characterized
 by the prevalence of highly polymorphic, multi-argument operators. In many
-cases though, these functions are even more complex than the 2-argument
+cases, these functions are even more complex than the 2-argument
 examples above might indicate. To handle these, we have added a few
 features that are not always found in multiple dispatch implementations.
 
@@ -408,7 +408,6 @@ abstract supertype of all integer types):
 
 \begin{verbatim}
 sum(xs::Integer...)
-
 sum(xs::Real...)
 \end{verbatim}
 
@@ -436,17 +435,17 @@ allowing method lookup to be done at compile time. Technically this is
 just an optimization, but in practice it has a profound impact on how code
 is written.
 
-\subsection{\texttt{index\_shape}}
+\subsection{\code{index\_shape}}
 
 Multiple dispatch appears at first to be about operator overloading:
 defining the behavior of functions on new, user-defined types.
 But the fact that the compiler ``knows'' the types of function arguments leads
 to a surprising, different application: performing elaborate, mostly-static,
-transformations of argument lists.
+transformations of argument tuples.
 
 Determining the result shape of an indexing operation is just such a
 transformation. In Julia's standard library, we have a function
-\texttt{index\_shape} that accepts index arguments (which, for present
+\code{index\_shape} that accepts index arguments (which, for present
 purposes, may be scalars or arrays of any rank), and returns the
 shape (a tuple of integers) of the result. The length of the shape
 determines the rank of the result array. Many different behaviors
@@ -477,7 +476,7 @@ a definition) performs ``argument splicing'': the elements of a container
 are spread into multiple arguments to the called function.
 The first definition traps and collapses runs of \code{Real} arguments of
 any length. The second definition ensures that the first definition only
-applies to the tail of an argument list, by keeping indexes as long as
+applies to the tail of an argument tuple, by keeping indexes as long as
 some non-scalar arguments remain.
 
 Since all indexing functions call this function, changing these two lines is
@@ -514,12 +513,21 @@ Julia's multi-methods were designed with the idea that dataflow type inference
 \cite{Cousot:1977} \cite{kaplanullman}
 would be applied to almost all concrete instances of methods, based on
 run-time argument types or compile-time estimated argument types. Without this
-piece of infrastructure, definitions like those above would be perhaps no more
+piece of infrastructure, definitions like those above might be no more
 than a perversely slow way to implement the functionality. But with it, the
 definitions have the effect of ``forcing'' the analysis to deduce accurate
 types. In effect, such definitions are designed to exploit the dataflow
 operation of matching inferred argument types against method signatures,
-thereby destructuring and recurring through argument lists at compile time.
+thereby destructuring and recurring through argument tuples at compile time.
+
+In a language with de-coupled design and analysis passes, a function like
+\code{index\_shape} would be implemented inside the run-time system
+(possibly scattered among many functions), and separately embodied in
+a hand-written transfer function inside the compiler. Our design shows
+that such arrangements can be replaced by a combination of high-level code and
+a generic analysis (the Telescoping Languages project \cite{telescoping}
+also recognized the value of incorporating analyzed library code into a
+compiler).
 
 From the programmer's perspective, Julia's multi-methods are convenient
 because they provide run-time and compile-time abstraction in a single
@@ -527,7 +535,9 @@ mechanism. Having learned Julia's ``object'' system, one has also learned
 its ``template'' system, without different syntax or reasoning about
 binding time. Semantically, methods always dispatch on run-time
 types, so the same definitions are applicable whether types are known
-statically or not.
+statically or not. Therefore users are free to reason about
+programs operationally, while gaining richer compile-time information
+as their method definitions grow more sophisticated.
 
 One price of this flexibility is that not all such definitions are well-founded:
 it is possible to write methods that yield tuples of indeterminate length.
@@ -537,6 +547,15 @@ still correct but imprecise, and in a way that depends on somewhat arbitrary
 choices of widening operators (for example, such a type might look
 like \code{(Int...)} or \code{(Int,Int...)}).
 
+\subsection{Symbolic programming}
+
+Similarities to symbolic pattern-matching (as typically found in
+computer algebra systems) are readily apparent. These systems effectively
+allow dispatch on the full structure of values, and so are in some sense
+even more powerful than our generic functions. However, they lack a clear
+separation between the type and value domains, leading to performance
+opacity: it is not clear what the system will be able to optimize
+effectively and what it won't.
 
 %TODO: point out how this combines the ``object part'' and the ``array part''
 %into a coherent whole.
@@ -573,29 +592,49 @@ like \code{(Int...)} or \code{(Int,Int...)}).
 %Haskell, with performance and user interface secondary. We think it should be
 %the other way round.
 
-\section{Extensions of the idea}
+\section{Other applications}
 
-Multiple dispatch can also be used in other contexts.
+Julia users have found many compelling applications of our multi-method
+paradigm.
 
-\subsection{Array views (Dahua's stuff)}
+\subsection{Array views}
 
-Also interesting are array views. In certain cases of subarray slicing, it is
+In certain instances of array indexing, it is
 possible to keep the data in place and return just a view (pointer) to the
-data instead of creating a new copy in memory. In this case the same
-infrastructure that applies to full arrays automatically works for subarrays.
-Views are just another thing that implement the array protocol: (length, size,
-getindex). Is there a point here about code reuse? Maybe but Jeff thinks it's
-not crucial.
+data instead of copying it. This functionality is implemented in a Julia
+package called \code{ArrayViews.jl}\cite{Lin:2014av}. A crucial property
+of an array view is its \emph{contiguous rank}: the number of leading
+dimensions for which the strides equal the cumulative product of the shape.
+When a view is constructed of another view, the type of view constructed
+depends on the indexes used and the contiguous rank of the argument. In
+favorable cases, a more efficient \code{ContiguousView} is returned.
 
-\subsection{Distributed Arrays}
+This determination is made by a definition similar to the following:
+
+{\small
+\begin{verbatim}
+view(a::DenseArray, I::Subs...) =
+    (shp = vshape(a, I...);
+     make_view(a, restrict_crank(contrank(a, I...), shp), shp, I...))
+\end{verbatim}
+}
+
+\code{contrank} essentially counts the number of leading ``colons'' in the
+indexing expression. \code{make\_view} selects (via dispatch) what kind of
+view to return based on the result type of \code{restrict\_crank}, which is
+set up to return the smaller of its two argument shapes.
+This is an excellent example of a library that needs to define behaviors
+actually exceeding the complexity of what is provided in the standard library.
+
+%\subsection{Distributed Arrays}
 
 \subsection{Quantities with Units}
 
-The implementation of unitful computations in Julia using the
-\code{SIUnits.jl}\cite{Fischer:2014si} package makes use of the same kind of
-tradeoffs as for array semantics. Unitful computations are another case
+A package providing unitful computations (\code{SIUnits.jl}\cite{Fischer:2014si})
+makes use of the same kinds of
+tradeoffs as array semantics. Unitful computations are another case
 where the relevent metadata (exponents on units) can be
-known at compile time in many cases, but not always. Therefore the
+known at compile time in many cases, but not always. The
 \code{SIUnits} library is free to express the general case, and have the
 overhead of tagging and dispatching removed where possible.
 
@@ -632,11 +671,10 @@ trade-off.
 \acks
 
 The authors gratefully acknowledge the enthusiastic participation of the Julia
-developer community for many stimulating discussions on the topic of array
-implementations in the Julia language, in particular Dahua Lin and Keno
-Fischer for the \code{ArrayViews.jl}\cite{Lin:2014av} and
-\code{SIUnits.jl}\cite{Fischer:2014si} packages respectively. Funding for this
-work was supported from the MIT Deshpande Center, an Intel Science and
+developer community in many stimulating discussions, in particular Dahua Lin and
+Keno Fischer for the \code{ArrayViews.jl}\cite{Lin:2014av} and
+\code{SIUnits.jl}\cite{Fischer:2014si} packages, respectively. Funding for this
+work was supported by the MIT Deshpande Center, an Intel Science and
 Technology award, a grant from VMWare, Citibank, a Horizontal Software
 Fellowship in Compuational Engineering, and NSF DMS-1035400.
 
