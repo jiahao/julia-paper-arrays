@@ -589,6 +589,34 @@ not crucial.
 
 \subsection{Distributed Arrays}
 
+Though not yet tested, an intriguing thought is that distributed array distribution
+rules can make use of the same approach as general array semantics.
+An interesting example is the  *p syntax used in Star-P. \cite{}
+
+%%
+% References: 
+%@INPROCEEDINGS{Choy05parallelmatlab:,
+ %   author = {Ron Choy and Alan Edelman },
+   % title = {Parallel MATLAB: Doing it right},
+   % booktitle = {Proceedings of the IEEE},
+%    year = {2005},
+%    pages = {331--341}
+%}
+
+%Husbands, P.J.R. 1999. Interactive Supercomputing. PhD Thesis, Department of Electrical Engineering and Computer Science, Massachusetts Institute of Technology.
+
+
+
+In this syntax, array dimensions were listed as parallel with the *p notation.  Indexing
+lead to questions of whether to take the first instance of *p as the  parallel dimension,
+the last instance of *p, or perhaps the final dimension.
+
+Julia multiple dispatch syntax provides the flexibility to explore the myriad of choices readily and flexibly.
+
+
+
+
+
 \subsection{Quantities with Units}
 
 The implementation of unitful computations in Julia using the
