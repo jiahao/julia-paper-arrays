@@ -122,7 +122,9 @@ Notable examples include the C++ libraries
 leverage the static semantics of their host languages to
 define $n$-arrays inductively as the outer product of a 1-array with an
 $(n-1)$-array \cite{Bavestrelli:2000ct}.
-Array libraries typically handle dimensions recursively, one at a time; arrays whose ranks are known at compile-time allow the compiler to infer the amount of storage needed for the shape information, and unroll index computations fully.
+Array libraries typically handle dimensions recursively, one at a time;
+knowing array ranks at compile-time allows the compiler to infer the amount
+of storage needed for the shape information, and unroll index computations fully.
 
 %The dispatch semantics also allows for efficient
 %implementations of certain operations; for example, \code{Repa} allows for in-
@@ -234,9 +236,9 @@ implementing arrays in an external library written in a static language.
   \includegraphics[width=\columnwidth]{fig-design-new}
   \caption{\label{fig:langdesign}
 Above: most dynamic languages are designed without consideration for program
-analysis, leaving the latter to future compiler writers to 
-step in if the language becomes sufficiently popular. 
-Below: Julia is designed with analysis in mind, with a single community responsible 
+analysis, leaving it to future compiler writers if the language becomes
+sufficiently popular.
+Below: Julia is designed with analysis in mind, with a single community responsible
 for both language design and performant implementation. This approach is
 natural for statically typed languages, but dynamic languages need static analysis too.}
 \end{figure}
@@ -249,14 +251,13 @@ designed to take advantage of the possibility of static analysis
 (Figure~\ref{fig:langdesign}), especially dataflow type inference. Such type
 inference, when combined with multiple dispatch, allows users and library
 writers to produce a rich array of specialized methods to handle different
-cases performantly. In this section, we describe how features of array
-semantics can be implemented from multiple dispatch, as a core feature of the
-Julia language, is used to implement the \code{Array} data type, which is
-parameterized by an element type and a rank (an integer).For purposes of this
-paper, an \code{Array} can be considered a tuple of a contiguous memory region
-and a shape (a tuple of integers giving the size of the array in each
-dimension). This simple representation is already enough to require nontrivial
-design decisions.
+cases performantly. In this section we describe how this language feature
+is used to implement indexing for Julia's \code{Array} data type.
+The \code{Array} type is parameterized by an element type and a rank (an
+integer). For purposes of this paper, its representation can be considered a
+tuple of a contiguous memory region and a shape (a tuple of integers giving
+the size of the array in each dimension). This simple representation is
+already enough to require nontrivial design decisions.
 
 %relevant? Furthermore, the same mechanisms to generate performant code for arrays for native Julia types also extend to user-defined types, since they share the same semantics.
 
@@ -280,7 +281,8 @@ with scalars are dropped'', or ``trailing dimensions of size one are
 dropped'', or ``the rank of the result is the sum of the ranks of the
 indexes'' (as in APL).
 
-The recursive, one-dimension-at-a-time approach favored in static languages limits which indexing behaviors can be chosen. For example, an indexing expression
+The recursive, one-dimension-at-a-time approach favored in static languages limits
+which indexing behaviors can be chosen. For example, an indexing expression
 of a 3-array in C++ might be written as \code{A[i][j][k]}. Here there are 
 three applications of \code{operator[]}, each of which will decide whether or not to
 drop a dimension based on the type of a single index. The second rule
