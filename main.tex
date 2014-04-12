@@ -52,13 +52,13 @@
 
 \begin{abstract}
 
-Arrays are such a rich and fundamental data type that they tend to be built in to
+Arrays are such a rich and fundamental data type that they tend to be built into
 a language, either in the compiler or in a large low-level library.
-It would be better to define this functionality at the user level, providing more
+Alternatively, defining this functionality at the user level provides greater
 flexibility for application domains not envisioned by the language designer.
 Only a few languages, such as C++ and Haskell, provide the necessary power to define
 $n$-dimensional arrays, but these systems rely on compile-time abstraction,
-sacrificing some amount of flexibility.
+sacrificing some flexibility.
 In contrast, dynamic languages make it straightforward for the user to define any
 behavior they might want, but at the possible expense of performance.
 
@@ -121,7 +121,7 @@ Notable examples include the C++ libraries
 \cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries
 leverage the static semantics of their host languages to
 define $n$-arrays inductively as the outer product of a 1-array with an
-$(n-1)$-array \cite{Bavestrelli:2000ct}.
+$(n\!\!-\!\!1)$-array \cite{Bavestrelli:2000ct}.
 Array libraries typically handle dimensions recursively, one at a time;
 knowing array ranks at compile-time allows the compiler to infer the amount
 of storage needed for the shape information, and unroll index computations fully.
@@ -157,10 +157,10 @@ community.
 %\cite{Garcia:2005ma, Lippmeier:2011ep}, which engenders much repetition in the
 %codebase \cite{Lippmeier:2012gp}.
 
-Some applications call for semantics that are not amenable
-to static analysis. Certain applications require arrays whose ranks are known
+Furthermore, there are applications which call for semantics that are not amenable
+to static analysis. Some may require arrays whose ranks are known
 only at run-time, and thus the data structures in these programs cannot be
-guaranteed to fit in a constant amount of memory. Some programs may
+guaranteed to fit in a constant amount of memory. Others may
 wish to dynamically dispatch on the rank of an array, a need which a
 library must anticipate by providing appropriate virtual methods.
 
@@ -248,7 +248,7 @@ natural for statically typed languages, but dynamic languages need static analys
 Julia\cite{Bezanson:2012jf} is dynamically typed and is based on dynamic
 multiple dispatch. However, the language and its standard library have been
 designed to take advantage of the possibility of static analysis
-(Figure~\ref{fig:langdesign}), especially dataflow type inference. Such type
+(Figure~\ref{fig:langdesign}), especially dataflow type inference \cite{Cousot:1977, kaplanullman}. Such type
 inference, when combined with multiple dispatch, allows users and library
 writers to produce a rich array of specialized methods to handle different
 cases performantly. In this section we describe how this language feature
@@ -327,16 +327,12 @@ rather than an $n$-array with $k$ singleton dimensions.
 % matrix to become a vector by dropping a dimension.
 
 In practice we may have to reach a consensus on what rules to use, but this
-should not be forced by technical limitations.
+should not be forced by technical limitations. The rules used by the Julia
+base library are defined in a single place in the codebase, thus allowing for
+the rules to be changed easily if necessary. Using multiple dispatch semantics
+allows us this flexibility.
 
-%% Instead of the compiler analyzing indexing expressions and determining an
-%% answer using hard-coded logic, we would rather implement the behavior in
-%% libraries, so that different kinds of arrays may be defined, or so that rules
-%% of similar complexity may be defined for other kinds of objects. But these
-%% kinds of rules are unusually diffMation will still have the flexibility to modify it to their
-%needs.
-
-\subsection{Multiple dispatch}
+\subsection{Multiple dispatch in Julia}
 
 Multiple dispatch (also known as generic functions, or multi-methods) is an
 object-oriented paradigm where methods are defined on combinations of data
@@ -353,8 +349,8 @@ arguments is invoked.
   \caption{\label{fig:dispatch}Class-based method dispatch (above) vs. multiple dispatch (below).}
 \end{figure}
 
-One can invent examples where multiple dispatch is useful in classic OO domains
-such as GUI programming. A method for drawing a label onto a button might
+Multiple dispatch is traditionally used in object-oriented domains
+such as GUI programming. For example, a method for drawing a label onto a button might
 look like this in Julia syntax:
 
 \begin{minipage}{\linewidth}
@@ -366,7 +362,7 @@ end
 \end{verbatim}
 \end{minipage}
 
-In a numerical setting, binary operators are ubiquitous and we can easily imagine
+Another use case for multiple dispatch is binary numerical operators. We can easily imagine
 needing to define special behavior for some combination of two arguments:
 
 \begin{verbatim}
@@ -377,21 +373,17 @@ But how much more is there? Would we ever need to define a method on
 \emph{three} different types at once? Indeed, most language designers and
 programmers seem to have concluded that multiple dispatch might be nice, but is
 not essential, and the feature is not often used \cite{Muschevici:2008}.
-%TODO: cite statistic from study of multiple dispatch showing it is lightly used
 Perhaps the few cases that seem to need it can be handled using tricks like
 Python's \code{\_\_add\_\_} and \code{\_\_radd\_\_} methods.
 
-However, multiple dispatch looks quite different in the context of technical
-computing. To a large extent, technical computing is characterized
-by the prevalence of highly polymorphic, multi-argument operators. In many
-cases, these functions are even more complex than the 2-argument
-examples above might indicate. To handle these, we have added a few
-features that are not always found in multiple dispatch implementations.
+In contrast to the simple two-argument examples above, multiple dispatch in
+technical computing contexts must handle many polymorphic, multi-argument
+operators. To handle these complicated cases, Julia's multiple dispatch
+contains some features that are not always found in other implementations.
 
-For this paper, perhaps the most important of these is support for
-variadic methods. Combining multiple dispatch and variadic methods
-seems straightforward
-enough, and yet it permits surprisingly powerful definitions. For example,
+For array semantics, support for variadic methods is perhaps the most
+important such feature. Combining multiple dispatch and variadic methods
+is straightforward, yet permits surprisingly powerful definitions. For example,
 consider a variadic \code{sum} function that adds up its arguments. We could
 write the following two methods for it (note that in Julia, \code{Real} is
 the abstract supertype of all real number types, and \code{Integer} is the
@@ -406,15 +398,15 @@ The syntax \code{...} allows an argument slot to match any number of trailing
 arguments (currently, Julia only allows this at the end of a method signature).
 In the first case, all arguments are integers and so we can use a naive
 summation algorithm. In the second case, we know that at least one argument
-is not an integer, so we might want to use some form of compensated
+is not an integer (otherwise the first method would be used), so we might want to use some form of compensated
 summation instead. Notice that these modest method signatures
-capture a subtle property (at least one argument is non-integer)
-\emph{declaratively}: there is no need to explicitly loop over the arguments
+capture a subtle property (at least one argument is non-integral)
+\emph{declaratively}, without needing to explicitly loop over the arguments
 to examine their types. The signatures also provide useful type information:
 at the very least, a compiler could know that all argument values inside
 the first method are of type \code{Integer}. Yet the type annotations
-are not redundant: they are necessary to specify the desired behavior. There
-is also no loss of flexibility: \code{sum} can be called with any combination
+are not redundant, but are necessary to specify the desired behavior. There
+is also no loss of flexibility, since \code{sum} can be called with any combination
 of number types, as users of dynamic technical computing languages would expect.
 
 While the author of these definitions does not write a loop to examine
@@ -426,12 +418,12 @@ allowing method lookup to be done at compile-time. Technically this is
 just an optimization, but in practice it has a profound impact on how code
 is written.
 
-\subsection{\code{index\_shape}}
+\subsection{Argument tuple transformations in \code{index\_shape}}
 
 Multiple dispatch appears at first to be about operator overloading:
 defining the behavior of functions on new, user-defined types.
 But the fact that the compiler ``knows'' the types of function arguments leads
-to a surprising, different application: performing elaborate, mostly-static,
+to a surprising, different application: performing elaborate, mostly static,
 transformations of argument tuples.
 
 Determining the result shape of an indexing operation is just such a
@@ -442,7 +434,7 @@ shape (a tuple of integers) of the result. The length of the shape
 determines the rank of the result array. Many different behaviors
 are possible, but currently we use the rule that trailing dimensions
 indexed with scalars are dropped\footnote{This rule is the subject of
-some debate in the Julia community. Fortunately it is easy to change,
+some debate in the Julia community \cite{issue5949}. Fortunately it is easy to change,
 as we will see.}.
 For example:
 
@@ -485,7 +477,7 @@ index_shape(i, I...)       = tuple(length(i),
 \end{verbatim}
 }
 
-Or we could immitate APL's behavior, where the rank of the result is the sum
+Or we could imitate APL's behavior, where the rank of the result is the sum
 of the ranks of the indexes, as follows:
 
 {\small
@@ -501,16 +493,14 @@ Here \code{size} (as opposed to \code{length}) gives the shape tuple of an array
 so we are just concatenating shapes.
 
 
-\subsection{Why it works}
+\subsection{Synergy of multi-methods and dataflow type inference}
 
-Julia's multi-methods were designed with the idea that dataflow type inference
-\cite{Cousot:1977, kaplanullman}
+Julia's multi-methods were designed so that dataflow type inference
 would be applied to almost all concrete instances of methods, based on
-run-time argument types or compile-time estimated argument types. Without this
-piece of infrastructure, definitions like those above might be no more
-than a perversely slow way to implement the functionality. But with it, the
-definitions have the effect of ``forcing'' the analysis to deduce accurate
-types. In effect, such definitions are designed to exploit the dataflow
+run-time argument types or compile-time estimated argument types. The
+type inference infrastructure ``forces'' the analysis to deduce accurate
+types from the specific method definitions and enables reasonable
+performance. In effect, such definitions are designed to exploit the dataflow
 operation of matching inferred argument types against method signatures,
 thereby destructuring and recurring through argument tuples at compile-time.
 
@@ -524,16 +514,29 @@ since new subtypes can always be constructed in the sequence
 \code{(T...)}, \code{(T,T...)}, \code{(T,T,T...)}, etc. This adds
 significant complexity to our lattice operators.
 
-\subsection{Implications}
+\subsection{Similarities to symbolic pattern matching}
 
-In a language with de-coupled design and analysis passes, a function like
+Julia's multi-methods resemble symbolic pattern matching, such as those in
+computer algebra systems. Pattern matching systems effectively
+allow dispatch on the full structure of values, and so are in some sense
+even more powerful than our generic functions. However, they lack a clear
+separation between the type and value domains, leading to performance
+opacity: it is not clear what the system will be able to optimize
+effectively and what it won't.
+Such a separation could be addressed by
+designating some class of patterns as the ``types'' that the compiler
+will analyze. However, more traditional type systems could be seen as
+doing this already, while also gaining data abstraction in the bargain.
+
+\subsection{Implications for Julia programmers}
+
+In a language with decoupled design and analysis passes, a function like
 \code{index\_shape} would be implemented inside the run-time system
 (possibly scattered among many functions), and separately embodied in
 a hand-written transfer function inside the compiler. Our design shows
 that such arrangements can be replaced by a combination of high-level code and
-a generic analysis (the Telescoping Languages project \cite{telescoping}
-also recognized the value of incorporating analyzed library code into a
-compiler).
+a generic analysis. Similar conclusions on the value of incorporating analyzed library code into a
+compiler were drawn by the Telescoping Languages project \cite{telescoping}.
 
 From the programmer's perspective, Julia's multi-methods are convenient
 because they provide run-time and compile-time abstraction in a single
@@ -541,11 +544,11 @@ mechanism. Having learned Julia's ``object'' system, one has also learned
 its ``template'' system, without different syntax or reasoning about
 binding time. Semantically, methods always dispatch on run-time
 types, so the same definitions are applicable whether types are known
-statically or not. Initially, a programmer's intent may be for all types
-to be known statically. But if needs change and one day array rank needs
-to be a run-time property, the same definitions still work (with the only
-difference being that the compiler will generate a dynamic dispatch or
-two where there were none before). It is also possible to use popular
+statically or not. Code initially written with all types
+known statically can be changed on demand to produce new code with some types
+known only at run-time, while still sharing all the same definitions. (The compiler
+takes care of generating the necessary dynamic dispatches transparently.)
+It is also possible to use popular
 dynamic constructs such as \code{A[I...]} where \code{I} is a heterogeneous
 array of indexes.
 %Therefore users are free to reason about
@@ -558,29 +561,8 @@ The compiler must recognize this condition and apply widening operators
 \cite{Cousot:1977, widening}. In these cases, the deduced types are
 still correct but imprecise, and in a way that depends on somewhat arbitrary
 choices of widening operators (for example, such a type might look
-like \code{(Int...)} or \code{(Int,Int...)}).
-
-
-\subsection{Symbolic programming}
-
-Similarities to symbolic pattern matching (as typically found in
-computer algebra systems) are readily apparent. These systems effectively
-allow dispatch on the full structure of values, and so are in some sense
-even more powerful than our generic functions. However, they lack a clear
-separation between the type and value domains, leading to performance
-opacity: it is not clear what the system will be able to optimize
-effectively and what it won't.
-
-This could potentially be addressed by
-designating some class of patterns as the ``types'' that the compiler
-will analyze. However, more traditional type systems could be seen as
-doing this already, while also gaining data abstraction in the bargain.
-
-%TODO: point out how this combines the ``object part'' and the ``array part''
-%into a coherent whole.
-%This is really a statement about implementing array semantics in language X
-%using language X itself, and in particular using intrinsic features for handling
-%objects to also handle arrays.
+like \code{(Int...)} or \code{(Int,Int...)}). Nevertheless, we believe that the
+flexibility of Julia's multi-methods is of overall net benefit to programmers.
 
 %This approach does not depend on any heuristics. Each call to
 %\texttt{index\_shape} simply requires one recursive invocation of type
@@ -596,18 +578,9 @@ doing this already, while also gaining data abstraction in the bargain.
 %This is an example of indexing behavior that is not amenable to useful static
 %analysis, since each branch of \code{diverge()} has different types.
 
-%TODO say something about how types of tuples in Julia are defined.
-
-%Such code would throw a type error in languages requiring static
-%checking such as Haskell. But in Julia, this is still allowed just that
-%the compiler may not have useful information from static analysis and so may
-%not run as fast. In Repa, the top priority is to appease the type system of
-%Haskell, with performance and user interface secondary. We think it should be
-%the other way round.
-
 \section{Discussion}
 
-\begin{figure}
+\begin{table}
 \label{dispatchratios}
 \begin{center}
 \begin{tabular}{|l|r|r|r|}\hline
@@ -633,24 +606,22 @@ LocStack   & 1.50 &  8.92 & 1.02 \\
 \hline
 Julia      & 5.86 & 51.44 & 1.54 \\
 \hline
-Julia Operators & 28.13 & 78.06 & 2.01 \\
+Julia operators & 28.13 & 78.06 & 2.01 \\
 \hline
 \end{tabular}
 \end{center}
 \caption{
 Comparison of Julia (1208 functions exported from the \code{Base} library)
-to other languages with multiple dispatch \cite{Muschevici:2008}.
-The ``Julia Operators'' row describes 47 functions with special syntax
-(binary operators, indexing, and concatenation).
-Numbers for other systems are copied from \cite{Muschevici:2008}; we did
-not repeat their experiments.
+to other languages with multiple dispatch.
+The ``Julia operators'' row describes 47 functions with special syntax, such as
+binary operators, indexing, and concatenation.
+Data for other systems are from Ref.~\cite{Muschevici:2008}.
 }
-\end{figure}
+\end{table}
 
-Multiple dispatch is used heavily throughout the Julia ecosystem.
-Figure~\ref{dispatchratios} illustrates this point quantitatively.
-Past work \cite{Muschevici:2008} has developed metrics for evaluating the use
-of multiple dispatch, three of which we use here:
+Multiple dispatch is used heavily throughout the Julia ecosystem. To quantify
+this statement, we use the following metrics for evaluating the extent of 
+multiple dispatch \cite{Muschevici:2008}:
 
 \begin{enumerate}
 \item Dispatch ratio (DR): The average number of methods in a generic function.
@@ -663,6 +634,9 @@ to functions with a large number of methods.
 arguments per method.
 \end{enumerate}
 
+Table~\ref{dispatchratios} shows the mean of each metric over the entire Julia
+\code{Base} library, showing a high degree of multiple dispatch compared with
+corpora in other languages \cite{Muschevici:2008}.
 Compared to most multiple dispatch systems, Julia functions tend to have a large
 number of definitions. To see why this might be, it helps to compare results
 from a biased sample of only operators. These functions are the most obvious
