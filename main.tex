@@ -433,9 +433,9 @@ purposes, may be scalars or arrays of any rank), and returns the
 shape (a tuple of integers) of the result. The length of the shape
 determines the rank of the result array. Many different behaviors
 are possible, but currently we use the rule that trailing dimensions
-indexed with scalars are dropped\footnote{This rule is the subject of
+indexed with scalars are dropped.\footnote{This rule has been the subject of
 some debate in the Julia community \cite{issue5949}. Fortunately it is easy to change,
-as we will see.}.
+as we will see.}
 For example:
 
 \begin{verbatim}
