@@ -279,12 +279,12 @@ have one or two dimensions? Array implementations prefer to invoke general
 rules to answer such questions. Such a rule might say ``dimensions indexed
 with scalars are dropped'', or ``trailing dimensions of size one are
 dropped'', or ``the rank of the result is the sum of the ranks of the
-indexes'' (as in APL).
+indexes'' (as in APL \cite{APL}).
 
 The recursive, one-dimension-at-a-time approach favored in static languages limits
 which indexing behaviors can be chosen. For example, an indexing expression
 of a 3-array in C++ might be written as \code{A[i][j][k]}. Here there are 
-three applications of \code{operator[]}, each of which will decide whether or not to
+three applications of \code{operator[]}, each of which will decide whether to
 drop a dimension based on the type of a single index. The second rule
 described above, and others like it, cannot be implemented in such a
 scheme.
@@ -314,7 +314,7 @@ associated with each dimension may not want to have the dimensions dropped or
 rearranged. For example, tomographic imaging applications may want arrays
 representing stacks of images as the imaging plane moves through a three-
 dimensional object. The resulting array would have associated space/time
-dimensions on top of the dimensions indexing into individual color planes. In
+dimensions on top of the dimensions indexing into color planes. In
 other applications, the dimensions are not semantically distinguishable and it
 may be desirable to drop singleton dimensions. For example, a statistical
 computation may find it convenient to represent an $n$-point correlation
@@ -357,11 +357,14 @@ One can invent examples where multiple dispatch is useful in classic OO domains
 such as GUI programming. A method for drawing a label onto a button might
 look like this in Julia syntax:
 
+\begin{minipage}{\linewidth}
 \begin{verbatim}
 function draw(target::Button, obj::Label)
     ...
 end
+
 \end{verbatim}
+\end{minipage}
 
 In a numerical setting, binary operators are ubiquitous and we can easily imagine
 needing to define special behavior for some combination of two arguments:
@@ -602,44 +605,74 @@ doing this already, while also gaining data abstraction in the bargain.
 %Haskell, with performance and user interface secondary. We think it should be
 %the other way round.
 
-\section{Other applications}
+\section{Discussion}
 
 \begin{figure}
 \label{dispatchratios}
 \begin{center}
-\begin{tabular}{|l|r|r|}\hline
-Language & Dispatch ratio & Choice ratio \\
+\begin{tabular}{|l|r|r|r|}\hline
+Language & DR & CR & DoS \\
 \hline \hline
-Gwydion    & 1.74 & 18.27 \\
+Gwydion    & 1.74 & 18.27 & 2.14 \\
 \hline
-OpenDylan  & 2.51 & 43.84 \\
+OpenDylan  & 2.51 & 43.84 & 1.23 \\
 \hline
-CMUCL      & 2.03 &  6.34 \\
+CMUCL      & 2.03 &  6.34 & 1.17 \\
 \hline
-SBCL       & 2.37 & 26.57 \\
+SBCL       & 2.37 & 26.57 & 1.11 \\
 \hline
-McCLIM     & 2.32 & 15.43 \\
+McCLIM     & 2.32 & 15.43 & 1.17 \\
 \hline
-Vortex     & 2.33 & 63.30 \\
+Vortex     & 2.33 & 63.30 & 1.06 \\
 \hline
-Whirlwind  & 2.07 & 31.65 \\
+Whirlwind  & 2.07 & 31.65 & 0.71 \\
 \hline
-NiceC      & 1.36 &  3.46 \\
+NiceC      & 1.36 &  3.46 & 0.33 \\
 \hline
-LocStack   & 1.50 &  8.92 \\
+LocStack   & 1.50 &  8.92 & 1.02 \\
 \hline
-Julia      & 6.08 & 52.70 \\
+Julia      & 5.86 & 51.44 & 1.54 \\
+\hline
+Julia Operators & 28.13 & 78.06 & 2.01 \\
 \hline
 \end{tabular}
 \end{center}
 \caption{
-Comparison of Julia (1132 functions exported from the \code{Base} library)
-to results for other multiple dispatch languages \cite{Muschevici:2008}.
+Comparison of Julia (1208 functions exported from the \code{Base} library)
+to other languages with multiple dispatch \cite{Muschevici:2008}.
+The ``Julia Operators'' row describes 47 functions with special syntax
+(binary operators, indexing, and concatenation).
+Numbers for other systems are copied from \cite{Muschevici:2008}; we did
+not repeat the experiments.
 }
 \end{figure}
 
-Julia users have found many compelling applications of our multi-method
-paradigm.
+Multiple dispatch is used heavily throughout the Julia ecosystem.
+Figure~\ref{dispatchratios} illustrates this point quantitatively.
+Past work \cite{Muschevici:2008} has developed metrics for evaluating the use
+of multiple dispatch, three of which we use here:
+
+\begin{enumerate}
+\item Dispatch ratio (DR): The average number of methods in a generic function.
+\item Choice ratio (CR): For each method, the total number of methods over all
+generic functions it belongs to, averaged over all methods. This is essentially
+the sum of the squares of the number of methods in each generic function, divided
+by the total number of methods. The intent of this statistic is to give more weight
+to functions with a large number of methods.
+\item Degree of specialization (DoS): The average number of type-specialized
+arguments per method.
+\end{enumerate}
+
+Compared to most multiple dispatch systems, Julia functions tend to have a large
+number of definitions. To see why this might be, it helps to compare results
+from a biased sample of only operators. These functions are the most obvious
+candidates for multiple dispatch, and as a result their statistics climb
+dramatically. Julia is focused on technical computing, and so is likely to
+have a large proportion of functions with this character.
+
+These numbers reflect our subjective impression of the importance of
+multi-methods in our domain. To give a better sense of how they
+are or could be used, we will briefly describe a few examples.
 
 \subsection{Array views}
 
@@ -655,6 +688,7 @@ favorable cases, a more efficient \code{ContiguousView} is returned.
 
 This determination is made by a definition similar to the following:
 
+\begin{minipage}{\linewidth}
 {\small
 \begin{verbatim}
 function view(a::DenseArray, I::Subs...)
@@ -662,8 +696,10 @@ function view(a::DenseArray, I::Subs...)
     make_view(a, restrict_crank(contrank(a, I...), shp),
               shp, I...)
 end
+
 \end{verbatim}
 }
+\end{minipage}
 
 \code{contrank} essentially counts the number of leading ``colons'' in the
 indexing expression. \code{make\_view} selects (via dispatch) what kind of
@@ -701,6 +737,13 @@ known at compile-time in many cases, but not always. The
 \code{SIUnits} library is free to express the general case, and have the
 overhead of tagging and dispatching removed where possible.
 
+The method signatures of operators on unit quantities ensure that they only
+apply to arguments with the same units. Because of this design, if an
+operator is applied to two arguments where the units are only statically
+known for one, the compiler can infer that the other must have the same units
+for the operation to succeed. Another implication is that mismatched units can
+be handled with a 1-line fallback definition that simply raises an
+informative error.
 
 
 \section{Conclusion}
@@ -749,7 +792,7 @@ developer community in many stimulating discussions, in particular Dahua Lin and
 Keno Fischer for the \code{ArrayViews.jl}\cite{Lin:2014av} and
 \code{SIUnits.jl}\cite{Fischer:2014si} packages, respectively. This
 work was supported by the MIT Deshpande Center, an Intel Science and
-Technology award, a grant from VMWare, Citibank, a Horizontal Software
+Technology award, grants from VMWare and Citibank, a Horizontal Software
 Fellowship in Compuational Engineering, and NSF DMS-1035400.
 
 % We recommend abbrvnat bibliography style.
