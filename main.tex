@@ -115,9 +115,12 @@ semantics into compilers.
 Only a few of the languages that support $n$-arrays, however, have sufficient
 power to express the semantics of $n$-arrays for general rank $n$ without
 resorting to hard-coding array behavior into a compiler.
-Notable examples include the C++ libraries 
+Single Assignment C \cite{Grelck:2006sa} is a notable language with built-in
+$n$-array support where $n$ can be specified at run-time. Other languages
+have well-established standard libraries for array semantics, such as
+the C++ libraries 
 \code{Blitz++} \cite{Veldhuizen:1998ab} and \code{Boost.MultiArray}
-\cite{Garcia:2005ma}, and Haskell's Repa (Regular Parallel Arrays)
+\cite{Garcia:2005ma} and Haskell's \code{Repa} (Regular Parallel Arrays)
 \cite{Keller:2010rs,Lippmeier:2011ep, Lippmeier:2012gp}. These libraries
 leverage the static semantics of their host languages to
 define $n$-arrays inductively as the outer product of a 1-array with an
@@ -319,8 +322,8 @@ other applications, the dimensions are not semantically distinguishable and it
 may be desirable to drop singleton dimensions. For example, a statistical
 computation may find it convenient to represent an $n$-point correlation
 function in an $n$-array, and integrate over $k$ points to generate the lower
-order $(n-k)$-correlation functions; the indistinguishability of the points
-means that the result is most conveniently expressed with rank $(n-k)$
+order $(n\!-\!k)$-correlation functions; the indistinguishability of the points
+means that the result is most conveniently expressed with rank $(n\!-\!k)$
 rather than an $n$-array with $k$ singleton dimensions.
 
 %In linear algebra on the other hand, one might want a row or column of a
@@ -535,6 +538,10 @@ a hand-written transfer function inside the compiler. Our design shows
 that such arrangements can be replaced by a combination of high-level code and
 a generic analysis. Similar conclusions on the value of incorporating analyzed library code into a
 compiler were drawn by the Telescoping Languages project \cite{telescoping}.
+Yet other languages like Single Assignment C allow great flexibility in
+user-defined functions but require the built-in shape functions to be
+implemented with special purpose type functions
+\cite{Scholz:2003sa,Grelck:2006sa}.
 
 From the programmer's perspective, Julia's multi-methods are convenient
 because they provide run-time and compile-time abstraction in a single
