@@ -204,7 +204,10 @@ numbers. This poses implementation challenges for static \MATLAB{} compilers
 like \code{FALCON}, which have to implement a complete type system with
 multiple compiler passes and interprocedural flow analyses to check
 for such drastic changes to arrays \cite{Rose:1999tt,
-Li:2013mf}. Additionally, type checking is essential to disambiguate
+Li:2013mf}. In fact, \MATLAB's (and APL's) array semantics are so flexible that
+shape inference for \MATLAB{} arrays is known to be impossible to decide using
+ordinary dataflow analysis on bounded lattices \cite{Joisha:2006aa}.
+Additionally, type checking is essential to disambiguate
 \MATLAB{} expressions like \code{A*B}, which, depending on the dimensions of
 \code{A} and \code{B}, could represent a scaling, inner product, outer
 product, matrix-matrix multiplication, or matrix-vector multiplication
