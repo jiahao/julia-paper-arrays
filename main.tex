@@ -502,8 +502,8 @@ would be applied to almost all concrete instances of methods, based on
 run-time argument types or compile-time estimated argument types.
 Our definitions exploit the dataflow operation of matching inferred argument types
 against method signatures, thereby destructuring and recurring through argument
-tuples at compile-time. As a result, the compiler is able to infer a result type
-for any particular call, and optimize away argument splicing that would otherwise
+tuples at compile-time. As a result, the compiler is able to infer sharp result
+types for many variadic calls, and optimize away argument splicing that would otherwise
 be prohibitively expensive. More sophisticated method signatures lead to more
 sophisticated type deductions.
 
