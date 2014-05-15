@@ -1,8 +1,5 @@
 \documentclass{sigplanconf}
 
-% The following \documentclass options may be useful:
-% preprint      Remove this option only once the paper is in final form.
-
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{hyperref}
@@ -160,8 +157,10 @@ community.
 %codebase \cite{Lippmeier:2012gp}.
 
 Some applications call for semantics that are not amenable
-to static analysis. Some may require arrays whose ranks are known
-only at run-time, and thus the data structures in these programs cannot be
+to static analysis. Some may require arrays whose ranks are known only at
+run-time, e.g. when reading in arrays from disk or from a data stream where the
+rank is specified as part of the input data. In these programs, the data
+structures cannot be
 guaranteed to fit in a constant amount of memory. Others may
 wish to dynamically dispatch on the rank of an array, a need which a
 library must anticipate by providing appropriate virtual methods.
@@ -203,8 +202,8 @@ numbers. This poses implementation challenges for static \MATLAB{} compilers
 like \code{FALCON}, which have to implement a complete type system with
 multiple compiler passes and interprocedural flow analyses to check
 for such drastic changes to arrays \cite{Rose:1999tt,
-Li:2013mf}. In fact, \MATLAB's (and APL's) array semantics are so flexible that
-shape inference for \MATLAB{} arrays is known to be impossible to decide using
+Li:2013mf}. In fact, \MATLAB's (and APL's) semantics are so flexible that shape
+inference on arrays is impossible to compute using
 ordinary dataflow analysis on bounded lattices \cite{Joisha:2006aa}.
 Additionally, type checking is essential to disambiguate
 \MATLAB{} expressions like \code{A*B}, which, depending on the dimensions of
@@ -547,7 +546,7 @@ implemented with special purpose type functions
 
 From the programmer's perspective, Julia's multi-methods are convenient
 because they provide run-time and compile-time abstraction in a single
-mechanism. Having learned Julia's ``object'' system, one has also learned
+mechanism. Julia's ``object'' system is also 
 its ``template'' system, without different syntax or reasoning about
 binding time. Semantically, methods always dispatch on run-time
 types, so the same definitions are applicable whether types are known
@@ -727,20 +726,17 @@ informative error.
 
 \subsection{Performance}
 
-The kind of performance we are concerned with in this work is elimination of
+In this work, we focus on the performance that arises from eliminating
 abstraction overhead. Our goal is to convert general definitions (e.g. an
 indexing function that can handle many kinds of arguments) into the rough
-equivalent of hand-written C code for any particular case. This is a useful
-performance target, since rewriting in C is what programmers will often do
-when their high-level code is too slow. Obtaining further speedups entails
-solving different kinds of problems than those we consider here. We also
-reuse the optimization passes provided by LLVM\cite{LLVM}, allowing us to
-ignore many lower-level performance issues.
+equivalent of handwritten C code for any particular case. This is a useful
+performance target, since programmers often resort to rewriting slow high-
+level code in C. Further speedups are possible, but entail techniques beyond
+the current scope. Additionally, we reuse the optimization passes provided by
+LLVM\cite{LLVM}, allowing us to ignore many lower-level performance issues.
 
 Experience so far suggests that we are close to meeting this
-performance goal. A few benchmark results are available
-\cite{Bezanson:2012jf}.
-
+performance goal \cite{Bezanson:2012jf}.
 
 \section{Conclusion}
 
