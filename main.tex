@@ -1,4 +1,4 @@
-\documentclass[preprint]{sigplanconf}
+\documentclass{sigplanconf}
 
 % The following \documentclass options may be useful:
 % preprint      Remove this option only once the paper is in final form.
@@ -557,7 +557,7 @@ The compiler must recognize this condition and apply widening operators
 still correct but imprecise, and in a way that depends on somewhat arbitrary
 choices of widening operators (for example, such a type might look
 like \code{(Int...)} or \code{(Int,Int...)}). Nevertheless, we believe that the
-flexibility of Julia's multi-methods is of overall net benefit to programmers.
+flexibility of Julia's multi-methods is of net benefit to programmers.
 
 %This approach does not depend on any heuristics. Each call to
 %\texttt{index\_shape} simply requires one recursive invocation of type
@@ -639,11 +639,12 @@ candidates for multiple dispatch, and as a result their statistics climb
 dramatically. Julia is focused on technical computing, and so is likely to
 have a large proportion of functions with this character.
 
-These numbers reflect our subjective impression of the importance of
-multi-methods in our domain. To give a better sense of how they
-are or could be used, we will briefly describe a few examples.
+\subsection{Other applications}
 
-\subsection{Array views}
+To give a better sense of how multi-methods
+are or could be used in our domain, we will briefly describe a few examples.
+
+\subsubsection{Array views}
 
 In certain instances of array indexing, it is
 possible to keep the data in place and return just a view (pointer) to the
@@ -677,7 +678,7 @@ set up to return the smaller of its two argument shapes.
 This is an excellent example of a library that needs to define behaviors
 actually exceeding the complexity of what is provided in the standard library.
 
-\subsection{Distributed arrays}
+\subsubsection{Distributed arrays}
 
 Other classes of array indexing rules are needed in distributed array
 implementations. The Star-P system \cite{parry, Choy05parallelmatlab}
@@ -696,7 +697,7 @@ using an approach similar to that used for \code{index\_shape}.
 %Julia multiple dispatch syntax provides the flexibility to explore the myriad of choices readily and flexibly.
 
 
-\subsection{Unit quantities}
+\subsubsection{Unit quantities}
 
 A package providing unitful computations (\code{SIUnits.jl}\cite{Fischer:2014si})
 makes use of the same kinds of
@@ -713,6 +714,23 @@ known for one, the compiler can infer that the other must have the same units
 for the operation to succeed. Another implication is that mismatched units can
 be handled with a 1-line fallback definition that simply raises an
 informative error.
+
+
+\subsection{Performance}
+
+The kind of performance we are concerned with in this work is elimination of
+abstraction overhead. Our goal is to convert general definitions (e.g. an
+indexing function that can handle many kinds of arguments) into the rough
+equivalent of hand-written C code for any particular case. This is a useful
+performance target, since rewriting in C is what programmers will often do
+when their high-level code is too slow. Obtaining further speedups entails
+solving different kinds of problems than those we consider here. We also
+reuse the optimization passes provided by LLVM\cite{LLVM}, allowing us to
+ignore many lower-level performance issues.
+
+Experience so far suggests that we are close to meeting this
+performance goal. A few benchmark results are available
+\cite{Bezanson:2012jf}.
 
 
 \section{Conclusion}
